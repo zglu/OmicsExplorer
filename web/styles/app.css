@@ -1,0 +1,695 @@
+/* OmicsExplorer - dark by default, light on request. */
+
+:root {
+  --bg: #0e1116;
+  --panel: #161b22;
+  --panel-2: #1b222b;
+  --fg: #e6edf3;
+  --muted: #8b949e;
+  --line: #2a3038;
+  --accent: #58a6ff;
+  --accent-dim: rgba(88, 166, 255, 0.16);
+  --danger: #f85149;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme='light'] {
+  --bg: #f6f8fa;
+  --panel: #ffffff;
+  --panel-2: #f0f3f6;
+  --fg: #1b1f24;
+  --muted: #6a7280;
+  --line: #d9dee5;
+  --accent: #1f6feb;
+  --accent-dim: rgba(31, 111, 235, 0.12);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+h2, h3, h4 { margin: 0 0 6px; font-weight: 600; }
+h2.section-title { font-size: 16px; letter-spacing: 0.2px; }
+h4 { font-size: 13px; color: var(--muted); font-weight: 600; margin-top: 14px; }
+
+.muted { color: var(--muted); }
+
+/* ------------------------------------------------------------------ topbar */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 18px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  flex-wrap: wrap;
+}
+
+.brand { display: flex; flex-direction: column; line-height: 1.25; }
+.brand-title { font-weight: 700; font-size: 15px; }
+.brand-sub { color: var(--muted); font-size: 11.5px; }
+
+.dataset-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.tab:hover { color: var(--fg); border-color: var(--accent); }
+.tab.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+.tab { display: inline-flex; align-items: center; gap: 6px; }
+.tab-name { pointer-events: none; }
+.tab-del {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 2px;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.tab-del:hover { color: var(--danger); opacity: 1; background: color-mix(in srgb, var(--danger) 15%, transparent); }
+
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+.gene-search { position: relative; display: flex; gap: 6px; }
+.gene-search input {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--fg);
+  padding: 6px 10px;
+  min-width: 220px;
+  font-size: 13px;
+}
+.gene-search input:focus { outline: none; border-color: var(--accent); }
+
+.btn {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.icon-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--fg);
+  width: 32px; height: 32px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 15px;
+}
+.icon-btn:hover { border-color: var(--accent); }
+
+.suggest {
+  position: absolute;
+  top: 34px; left: 0;
+  min-width: 320px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 60;
+  display: none;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.suggest-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+}
+.suggest-item:hover { background: var(--accent-dim); }
+
+.gene-chips { display: flex; gap: 6px; padding: 8px 18px 0; flex-wrap: wrap; }
+
+/* ------------------------------------------------------------------ chips */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chip:hover { border-color: var(--accent); }
+.chip.off { opacity: 0.35; }
+.chip i {
+  width: 9px; height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.chip-name { font-weight: 500; }
+.chip-count { color: var(--muted); font-size: 11px; }
+.chip-close { color: var(--muted); cursor: pointer; font-weight: 700; }
+.chip-close:hover { color: var(--danger); }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+.chip.active { border-color: var(--accent); color: var(--accent); }
+.gene-chip { user-select: none; }
+
+/* ----------------------------------------------------------------- layout */
+
+.main { padding: 14px 18px 60px; max-width: 1500px; margin: 0 auto; }
+
+.section { margin-bottom: 28px; }
+.section-head { display: flex; align-items: center; justify-content: space-between; }
+
+.toolbar {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+}
+.tool-field { display: flex; flex-direction: column; gap: 3px; }
+.tool-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.tool-select, .mini-select {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 12.5px;
+}
+.tool-select:focus, .mini-select:focus { outline: none; border-color: var(--accent); }
+
+/* ------------------------------------------------------------ dataset card */
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 470px), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.dset-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px 11px;
+  position: relative;
+  min-width: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.dset-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: 14px 14px 0 0;
+  background: linear-gradient(90deg, var(--accent), transparent 70%);
+  opacity: 0.55;
+}
+.dset-card.focused {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-dim), 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.dset-card.dragging { opacity: 0.45; }
+
+.grip {
+  cursor: grab;
+  color: var(--muted);
+  font-size: 15px;
+  padding: 0 4px 0 0;
+  user-select: none;
+}
+.grip:hover { color: var(--accent); }
+.dset-card.dragging .grip { cursor: grabbing; }
+
+.gene-bar { display: flex; margin: 4px 0; }
+.gene-bar .colorbar { width: 160px; }
+.gene-bar span.muted { font-size: 11px; }
+
+.dset-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dset-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; flex: 1 1 240px; }
+.dset-name {
+  font-weight: 650;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--accent-dim), transparent 160%), var(--panel-2);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.dset-card.focused .dset-name {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, var(--accent-dim), transparent 180%), var(--panel-2);
+}
+.dset-species { width: 9px; height: 9px; border-radius: 50%; display: inline-block; align-self: center; }
+.dset-count { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.dset-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.dset-tools select.mini-select { min-width: 0; max-width: 130px; }
+.dset-tools select.mini-select option { text-overflow: ellipsis; }
+.mini-check { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); cursor: pointer; }
+.mini-check input { accent-color: var(--accent); }
+.mini-btn {
+  background: transparent; border: 1px solid var(--line); color: var(--fg);
+  border-radius: 8px; padding: 4px 10px; font-size: 12px; cursor: pointer;
+}
+.mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+.mini-range { width: 80px; accent-color: var(--accent); }
+.selection { border-top: 1px dashed var(--line); padding-top: 8px; margin-top: 10px; }
+.selection .composition-title { display: flex; align-items: center; gap: 8px; }
+
+.dset-body { display: flex; gap: 14px; align-items: flex-start; margin-top: 8px; }
+.plot-wrap { flex: 1 1 auto; min-width: 0; }
+.dset-desc { color: var(--muted); font-size: 12px; margin-top: 8px; max-width: 80ch; }
+
+.composition { margin-top: 10px; }
+.composition-title { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; margin-top: 8px; }
+.composition canvas { display: block; max-width: 100%; }
+
+/* in-card group flow comparison */
+details.group-cmp {
+  margin-top: 12px;
+  border-top: 1px dashed var(--line);
+  padding-top: 8px;
+}
+details.gene-dot {
+  margin-top: 12px;
+  border-top: 1px dashed var(--line);
+  padding-top: 8px;
+}
+details.gene-dot > summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  user-select: none;
+  list-style: none;
+}
+details.gene-dot > summary::before { content: '\25B8'; display: inline-block; margin-right: 6px; }
+details.gene-dot[open] > summary::before { content: '\25BE'; }
+details.gene-dot > summary:hover { color: var(--accent); }
+.gene-dot-body { margin-top: 6px; }
+.card-foot-body { margin-top: 6px; }
+.card-foot-body p.muted { font-size: 12px; margin: 4px 0; }
+.card-foot-body canvas { display: block; }
+.chart-holder { position: relative; }
+.flow-cursor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.card-foot-body .group-cmp-controls { display: flex; gap: 10px; flex-wrap: wrap; }
+.dotplot-loading { font-size: 12px; color: var(--muted); padding: 4px 0; }
+
+/* schisto-style ggplot dotplot: rows = categories, columns = genes */
+.gp { font-size: 12px; margin: 4px 0 2px; }
+.gp-row { display: flex; align-items: center; min-height: 22px; }
+.gp-head { min-height: 92px; }
+.gp-cat {
+  flex: 0 0 150px;
+  padding-right: 8px;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--fg);
+}
+.gp-n { color: var(--muted); font-size: 10.5px; margin-left: 4px; }
+.gp-x { flex: 0 0 30px; display: flex; justify-content: center; }
+.gp-x > span { writing-mode: vertical-rl; transform: rotate(180deg); overflow: hidden; max-height: 90px; }
+.gp-cell {
+  flex: 0 0 30px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gp-dot {
+  display: inline-block;
+  border-radius: 50%;
+  width: 3px;
+  height: 3px;
+}
+.gp-legend {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+/* when a gene or a metric colours the plot the category legend / composition
+   would be misleading (the colours no longer show the categories) */
+.dset-card.gene-mode > .legend,
+.dset-card.gene-mode > .composition,
+.dset-card.metric-mode > .legend,
+.dset-card.metric-mode > .composition { display: none; }
+
+/* clear button of the gene search */
+.gene-clear {
+  padding: 2px 8px;
+  font-size: 14px;
+  line-height: 1;
+}
+details.group-cmp > summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  user-select: none;
+  list-style: none;
+}
+details.group-cmp > summary::before { content: '\25B8'; display: inline-block; margin-right: 6px; }
+details.group-cmp[open] > summary::before { content: '\25BE'; }
+details.group-cmp > summary:hover { color: var(--accent); }
+.group-cmp-body { margin-top: 6px; }
+.group-cmp-controls { display: flex; gap: 10px; flex-wrap: wrap; }
+.group-cmp-body canvas { display: block; }
+.group-cmp-body p.muted { font-size: 12px; margin: 4px 0; }
+
+.dotplot-wrap { margin-top: 8px; overflow-x: auto; }
+.dotplot-header { display: block; margin-left: 200px; }
+.dotplot-body { display: flex; align-items: flex-start; }
+.dotplot-labels { flex: 0 0 auto; position: sticky; left: 0; background: var(--panel); z-index: 2; }
+.dotplot-grid { flex: 0 0 auto; }
+
+/* --------------------------------------------------------------- the plot */
+
+.oe-plot {
+  position: relative;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.oe-layer { position: absolute; inset: 0; display: block; }
+.oe-bg { z-index: 1; }
+.oe-gl { z-index: 2; }
+.oe-top { z-index: 3; cursor: crosshair; }
+
+/* ----------------------------------------------------------------- charts */
+
+.chart-holder { overflow: auto; margin-top: 6px; }
+.chart-holder canvas { display: block; }
+.heatmap-canvas { cursor: pointer; }
+
+.colorbar-wrap { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.colorbar { height: 12px; width: 240px; border-radius: 3px; border: 1px solid var(--line); }
+
+.compare-body { display: flex; flex-direction: column; gap: 10px; }
+.compare-controls { display: flex; gap: 8px; align-items: center; }
+.compare-caption { font-size: 12px; color: var(--muted); }
+.compare-caption b { color: var(--fg); font-weight: 600; }
+.compare-scale { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.compare-scale .colorbar { width: 180px; height: 10px; border-radius: 5px; }
+.compare-table th { vertical-align: bottom; }
+.compare-table th:not(:first-child) { text-align: right; }
+.compare-table th .th-name { display: block; color: var(--fg); font-weight: 600; }
+.compare-table th .th-sub { display: block; font-size: 10.5px; font-weight: 400; color: var(--muted); }
+.compare-table td:first-child,
+.compare-table th:first-child { position: sticky; left: 0; background: var(--panel); z-index: 1; }
+.compare-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--panel-2) 55%, transparent); }
+.compare-table tbody tr:nth-child(even) td:first-child { background: var(--panel); }
+.compare-table tbody tr:hover td { background: var(--accent-dim); }
+.compare-genes { margin-top: 10px; }
+.compare-genes > h4 { margin-top: 4px; }
+.cmp-dotplot { cursor: default; }
+
+.table-wrap { overflow: auto; max-height: 520px; border: 1px solid var(--line); border-radius: var(--radius); }
+.data-table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+.data-table th, .data-table td { padding: 4px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+.data-table th { position: sticky; top: 0; background: var(--panel); color: var(--muted); font-weight: 600; }
+.data-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table tbody tr:hover { background: var(--accent-dim); cursor: pointer; }
+
+.explorer-head { display: flex; align-items: center; gap: 12px; }
+.explorer-head h3 { margin: 0; }
+.gene-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.gene-head h3 { margin: 0; font-size: 18px; }
+.gene-product { max-width: 60ch; }
+
+.gene-chips { display: flex; gap: 6px; padding: 8px 18px 0; flex-wrap: wrap; }
+
+/* ---------------------------------------------------------------- export */
+
+.export-btns { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 5; }
+.export-btn {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 6px;
+  font-size: 10.5px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+.export-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* --------------------------------------------------------------- overlay */
+
+.tooltip {
+  position: fixed;
+  z-index: 100;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 12px;
+  pointer-events: none;
+  box-shadow: var(--shadow);
+  max-width: 280px;
+}
+.tip-dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
+.tip-muted { color: var(--muted); font-size: 11px; }
+
+.busy {
+  position: fixed;
+  top: 60px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  z-index: 80;
+}
+
+.toast {
+  position: fixed;
+  bottom: 22px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 120;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------------------------------------------------------------- footer */
+
+.footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); }
+.footer-cols { display: flex; gap: 40px; flex-wrap: wrap; }
+.footer-col h4 { margin-bottom: 4px; }
+.footer-col ul { margin: 0; padding-left: 16px; color: var(--fg); font-size: 12.5px; }
+.footer-col p { margin: 2px 0; font-size: 12.5px; }
+
+/* the exporter needs the full width of a scrolled figure */
+.export-open { overflow: visible !important; }
+
+/* ------------------------------------------------- add-data dialog ------- */
+.dialog-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(8, 10, 14, 0.62);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 64px 20px 20px;
+}
+.dialog {
+  width: min(640px, 100%);
+  background: var(--panel, var(--bg));
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px 20px 20px;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.35);
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+}
+.dialog-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.dialog-head h3 { margin: 0; font-size: 16px; }
+.add-tabs { display: flex; gap: 8px; margin: 6px 0 14px; }
+.add-tabs button {
+  border: 1px solid var(--line); background: transparent; color: var(--muted);
+  border-radius: 999px; padding: 4px 14px; font-size: 12px; cursor: pointer;
+}
+.add-tabs button.active { border-color: var(--accent); color: var(--accent); }
+.add-pane { margin-bottom: 6px; }
+.add-row { display: flex; gap: 8px; }
+.drop-zone {
+  border: 1.5px dashed var(--line); border-radius: 10px;
+  padding: 22px 16px; text-align: center; color: var(--fg);
+  transition: border-color .15s, background .15s;
+}
+.drop-zone.drag { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.drop-zone .small { font-size: 11.5px; margin-top: 10px; }
+.path-input {
+  flex: 1; min-width: 0;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--bg);
+  color: var(--fg); padding: 7px 10px; font-size: 12.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.add-info { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+.add-info .file-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.add-info .file-name { font-size: 13px; font-weight: 600; }
+.add-info .file-stats { color: var(--muted); font-size: 12px; }
+.add-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 18px; margin: 8px 0; }
+.add-col-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 10px 0 4px; }
+.add-groups label, .add-embeddings label {
+  display: flex; gap: 7px; align-items: center;
+  font-size: 12.5px; color: var(--fg); white-space: nowrap; overflow: hidden;
+}
+.add-groups label span { overflow: hidden; text-overflow: ellipsis; }
+.add-embeddings { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0; }
+.add-name-row { display: flex; gap: 8px; align-items: center; margin: 12px 0 4px; }
+.add-name-row input {
+  flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg); color: var(--fg); padding: 7px 10px; font-size: 12.5px;
+}
+.add-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.add-progress {
+  margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px;
+  max-height: 220px; overflow-y: auto;
+}
+#add-log {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px; line-height: 1.55; color: var(--muted); white-space: pre-wrap;
+}
+.small { font-size: 11.5px; }
+
+/* the list of metadata columns that are not offered as groupings */
+.add-others { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 6px; }
+.add-other {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-2);
+}
+.add-other b { font-weight: 600; }
+.add-other .muted { font-size: 10.5px; }
+
+/* the normalise switch of the in-card gene dotplot */
+.gp-controls { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.gp-controls .muted { font-size: 11px; }
+.gp-controls select.mini-select { padding: 2px 6px; font-size: 11.5px; }
+
+/* ------------------------------------------------------- the help dialog */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 10, 14, 0.55);
+  backdrop-filter: blur(2px);
+}
+.modal-card {
+  position: relative;
+  width: min(620px, calc(100vw - 32px));
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 22px 16px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+}
+.modal-card h3 { margin: 0 0 10px; font-size: 16px; }
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.modal-close:hover { color: var(--danger); border-color: var(--danger); }
+.help-body h4 {
+  margin: 14px 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--accent);
+}
+.help-body ul { margin: 4px 0; padding-left: 18px; font-size: 13px; line-height: 1.65; }
+.help-body p { font-size: 13px; line-height: 1.6; margin: 4px 0; }
+.help-body code {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-size: 12px;
+}
+.help-body .muted { color: var(--muted); }
+.help-author {
+  margin: 16px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+.help-author a { color: var(--accent); text-decoration: none; }
+.help-author a:hover { text-decoration: underline; }

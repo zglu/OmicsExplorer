@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OmicsExplorer</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles/app.css">
+<script src="vendor/html2canvas.min.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div id="brand" class="brand"></div>
+
+  <nav id="dataset-tabs" class="dataset-tabs"></nav>
+
+  <div class="topbar-right">
+    <div id="gene-search" class="gene-search">
+      <input id="gene-input" type="search" placeholder="Search a gene…" autocomplete="off" spellcheck="false">
+      <button id="gene-clear" class="icon-btn gene-clear" type="button" title="Clear the gene query" style="display:none">×</button>
+      <button id="gene-go" class="btn" type="button">Go</button>
+      <div id="gene-suggest" class="suggest"></div>
+    </div>
+    <button id="add-data" class="btn" type="button" title="Open another h5ad dataset">＋ Data</button>
+    <button id="help-toggle" class="icon-btn" type="button" title="How to use OmicsExplorer">?</button>
+    <button id="theme-toggle" class="icon-btn" type="button" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<div id="gene-chips" class="gene-chips"></div>
+
+<main class="main">
+  <div id="toolbar" class="toolbar"></div>
+
+  <section id="overview-section" class="section">
+    <h2 class="section-title">Datasets</h2>
+    <div id="overview-grid" class="overview-grid"></div>
+  </section>
+
+  <section id="compare-section" class="section">
+    <h2 class="section-title">Compare</h2>
+    <div id="compare-body" class="compare-body"></div>
+  </section>
+
+  <section id="marker-section" class="section" style="display:none">
+    <h2 class="section-title">Marker genes</h2>
+    <div id="marker-body" class="marker-body"></div>
+  </section>
+
+  <footer id="footer" class="footer"></footer></main>
+
+<div id="help-dialog" class="modal" style="display:none">
+  <div class="modal-card">
+    <button id="help-close" class="modal-close" type="button" title="Close">×</button>
+    <h3>How to use OmicsExplorer</h3>
+    <div id="help-body"></div>
+    <p class="help-author">OmicsExplorer · by <a href="https://github.com/zglu" target="_blank" rel="noopener">zglu</a></p>
+  </div>
+</div>
+
+<div id="busy" class="busy" style="display:none"></div>
+<div id="tooltip" class="tooltip" style="display:none"></div>
+
+<div id="add-dialog" class="dialog-overlay" style="display:none">
+  <div class="dialog">
+    <div class="dialog-head">
+      <h3>Add dataset</h3>
+      <button id="add-close" class="icon-btn" type="button" title="Close">×</button>
+    </div>
+    <div class="add-tabs">
+      <button type="button" class="active" data-pane="upload">Upload file</button>
+      <button type="button" data-pane="path">Server path</button>
+    </div>
+    <div id="add-pane-upload" class="add-pane">
+      <div id="drop-zone" class="drop-zone">
+        <p>Drop a <b>.h5ad</b> or <b>Seurat (.rds)</b> file here, or</p>
+        <button id="upload-browse" class="btn" type="button">Browse files</button>
+        <input id="upload-input" type="file" accept=".h5ad,.hdf,.h5,.rds,.rdata,.rda" hidden>
+        <p class="muted small">The file is copied next to the project and converted; the original is saved in <code>uploads/</code>. Converting a <b>.rds</b> needs R with Seurat on the server.</p>
+      </div>
+    </div>
+    <div id="add-pane-path" class="add-pane" style="display:none">
+      <p class="muted small">An .h5ad file on the machine that runs the server:</p>
+      <div class="add-row">
+        <input id="path-input" type="text" class="path-input" placeholder="/home/you/data/sample.h5ad" spellcheck="false">
+        <button id="path-scan" class="btn" type="button">Scan</button>
+      </div>
+    </div>
+    <div id="add-info" class="add-info" style="display:none"></div>
+    <div id="add-progress" class="add-progress" style="display:none">
+      <div id="add-log"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

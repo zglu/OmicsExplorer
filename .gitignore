@@ -1,0 +1,35 @@
+# python
+build/
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# the built bundle
+data/
+dist/
+examples/*/data/
+
+# the files that were uploaded through the web UI (private data!)
+examples/*/uploads/
+examples/*/datasets.auto.yaml
+
+# container / singularity images
+*.sif
+*.tar
+
+# node
+node_modules/
+
+# local launcher (it hard codes a path of this machine)
+bin/
+
+# editors / os
+.DS_Store
+*.swp
+.idea/
+.vscode/
+*.log

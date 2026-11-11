@@ -1,0 +1,26 @@
+# OmicsExplorer - the web UI with your data, nothing leaves the machine.
+#
+#   docker compose up --build          # then open http://localhost:8080
+#
+# The project directory (the current one by default) holds project.yaml, the
+# built bundle in data/, uploaded files in uploads/ and their cache.
+services:
+  omicexplorer:
+    build:
+      context: .
+      args:
+        WITH_R: "1"          # set to 0 for a smaller image without Seurat
+    image: omicexplorer:latest
+    container_name: omicexplorer
+    ports:
+      - "8080:8080"
+    volumes:
+      - ${OE_PROJECT:-.}:/project
+    # run as your own user so the files in the project stay yours
+    user: "${OE_UID:-1000}:${OE_GID:-1000}"
+    environment:
+      OMICEXPLORER_HOME: /project
+      HOME: /tmp
+    # "unless-stopped" restarts the container after a reboot (it then keeps
+    # port 8080 busy) - opt in if that is what you want
+    restart: "no"

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#121b26"/>
+      <stop offset="1" stop-color="#090e14"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.74" cy="0.26" r="0.72">
+      <stop offset="0" stop-color="#31456b" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#0a0f15" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <rect width="64" height="64" rx="14" fill="url(#glow)"/>
+  <g>
+    <circle cx="14.4" cy="41.6" r="6.3" fill="rgb(33,151,138)"/>
+    <circle cx="14.6" cy="40.8" r="5.7" fill="rgb(37,131,141)"/>
+    <circle cx="23.6" cy="46.6" r="5.7" fill="rgb(34,162,133)"/>
+    <circle cx="21.7" cy="35.8" r="5.1" fill="rgb(36,135,141)"/>
+    <circle cx="28.1" cy="44.8" r="5.8" fill="rgb(34,162,134)"/>
+    <circle cx="30.1" cy="42.1" r="6.3" fill="rgb(54,181,120)"/>
+    <circle cx="36.5" cy="15.3" r="4.9" fill="rgb(39,126,141)"/>
+    <circle cx="45.6" cy="21.6" r="4.7" fill="rgb(34,166,132)"/>
+    <circle cx="41.3" cy="24.8" r="4.7" fill="rgb(33,161,134)"/>
+    <circle cx="35.0" cy="22.3" r="6.1" fill="rgb(35,137,141)"/>
+    <circle cx="33.8" cy="20.2" r="5.5" fill="rgb(32,146,139)"/>
+    <circle cx="37.3" cy="16.0" r="5.1" fill="rgb(38,127,141)"/>
+    <circle cx="52.0" cy="42.9" r="6.1" fill="rgb(134,211,73)"/>
+    <circle cx="41.8" cy="38.9" r="5.0" fill="rgb(49,178,123)"/>
+    <circle cx="42.5" cy="44.8" r="6.0" fill="rgb(85,196,102)"/>
+    <circle cx="36.3" cy="47.3" r="5.3" fill="rgb(60,186,116)"/>
+    <circle cx="50.9" cy="41.1" r="4.6" fill="rgb(95,200,96)"/>
+    <circle cx="45.1" cy="50.4" r="5.4" fill="rgb(163,217,54)"/>
+    <circle cx="51.2" cy="27.9" r="3.5" fill="rgb(75,193,107)"/>
+    <circle cx="37.2" cy="43.1" r="3.7" fill="rgb(55,182,119)"/>
+    <circle cx="15.5" cy="25.3" r="4.6" fill="rgb(39,126,141)"/>
+  </g>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="13.5" fill="none" stroke="#3a4d69" stroke-opacity="0.7"/>
+</svg>

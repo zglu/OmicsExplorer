@@ -1,0 +1,15 @@
+{
+  "name": "omicexplorer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local single-cell / spatial-omics visualisation platform",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/e2e.mjs",
+    "smoke": "node tests/smoke.mjs",
+    "serve": "python3 -m omicexplorer.cli serve -p examples/cs_of/project.yaml"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.0.0"
+  }
+}
