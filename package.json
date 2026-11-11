@@ -7,7 +7,8 @@
   "scripts": {
     "test": "node tests/e2e.mjs",
     "smoke": "node tests/smoke.mjs",
-    "serve": "python3 -m omicexplorer.cli serve -p examples/cs_of/project.yaml"
+    "serve": "python3 -m omicexplorer.cli serve -p my_project/project.yaml",
+    "local": "node tests/e2e_local.mjs"
   },
   "devDependencies": {
     "puppeteer": "^24.0.0"

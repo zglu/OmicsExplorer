@@ -85,12 +85,10 @@ def test_blob_is_byte_compatible_with_the_reference_implementation():
     That project uses the same format, so a blob must be readable by both
     sides.  The test is skipped when the reference data is not present.
     """
-    reference = Path(
-        os.environ.get(
-            "OE_REFERENCE_BLOB",
-            "/home/ubuntu/zglu_Data/WebProjects/NematodeAtlas_Data-Dev/nematode-atlas/data/hc_snseq",
-        )
-    )
+    reference = os.environ.get("OE_REFERENCE_BLOB")
+    if not reference:
+        pytest.skip("set OE_REFERENCE_BLOB to a blob of the reference project")
+    reference = Path(reference)
     if not (reference / "X.bin").exists():
         pytest.skip("the reference blob is not available")
     index = blob.read_index(reference / "X.index.json")
@@ -105,12 +103,10 @@ def test_blob_is_byte_compatible_with_the_reference_implementation():
 
 def test_blob_matches_the_reference_encoder():
     """Our encoder must produce the same bytes as the reference one."""
-    reference = Path(
-        os.environ.get(
-            "OE_REFERENCE_ENCODER",
-            "/home/ubuntu/zglu_Data/WebProjects/NematodeAtlas_Data-Dev/pipeline/python/common.py",
-        )
-    )
+    reference = os.environ.get("OE_REFERENCE_ENCODER")
+    if not reference:
+        pytest.skip("set OE_REFERENCE_ENCODER to the encoder of the reference project")
+    reference = Path(reference)
     if not reference.exists():
         pytest.skip("the reference encoder is not available")
     namespace: dict = {}
@@ -133,23 +129,51 @@ def test_blob_matches_the_reference_encoder():
 # --------------------------------------------------------------------------
 
 
-def test_load_example_project():
-    project = load_project(ROOT / "examples" / "cs_of" / "project.yaml")
-    assert project.name
-    # exact-content assertions on the four static datasets; datasets added via
-    # the web UI (datasets.auto.yaml) are merged in and must not break this
-    static = ["cs_bin50", "of_cellbin", "cs_scrna", "of_scrna"]
-    assert all(project.dataset(i) is not None for i in static)
-    assert len(project.datasets) >= len(static)
-    assert project.dataset("cs_bin50") is not None
-    ds = project.dataset("cs_bin50")
-    assert [g.name for g in ds.groups] == ["cell_type", "cluster", "leiden", "sample"]
-    assert ds.embeddings[0].name == "spatial"
+def test_load_a_project(tmp_path):
+    """A manifest is read, its datasets and their metadata are resolved."""
+    manifest = tmp_path / "project.yaml"
+    manifest.write_text(
+        "name: test project\n"
+        "subtitle: a subtitle\n"
+        "species:\n"
+        "  cs:\n"
+        "    name: Clonorchis sinensis\n"
+        "    color: '#4f9cf9'\n"
+        "datasets:\n"
+        "  - id: panel_a\n"
+        "    name: Panel A\n"
+        "    kind: spatial\n"
+        "    path: a.h5ad\n"
+        "    groups:\n"
+        "      cell_type: {column: cell_type}\n"
+        "      cluster: {column: cluster}\n"
+        "    embeddings:\n"
+        "      spatial: {kind: spatial, obsm: spatial}\n"
+        "      umap: {kind: umap, obsm: X_umap}\n",
+        encoding="utf-8",
+    )
+    project = load_project(manifest)
+    assert project.name == "test project"
+    assert project.subtitle == "a subtitle"
+    assert "cs" in project.species
+    ds = project.dataset("panel_a")
+    assert ds is not None
+    assert [g.name for g in ds.groups] == ["cell_type", "cluster"]
+    assert [e.name for e in ds.embeddings] == ["spatial", "umap"]
     assert ds.embeddings[0].kind == "spatial"
-    assert ds.images and ds.images[0].path.endswith(".png")
-    # the data files themselves are not part of the repository
-    if not ds.path.exists():
-        pytest.skip("the example data is not available on this machine")
+
+
+def test_local_yaml_overrides_the_manifest(tmp_path):
+    """A local.yaml next to the manifest wins (machine specific settings)."""
+    manifest = tmp_path / "project.yaml"
+    manifest.write_text(
+        "name: test\ndata_root: /somewhere/else\n"
+        "datasets:\n  - id: a\n    path: a.h5ad\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "local.yaml").write_text("data_root: /the/real/place\n", encoding="utf-8")
+    project = load_project(manifest)
+    assert project.data_root == Path("/the/real/place")
 
 
 def test_manifest_errors(tmp_path):

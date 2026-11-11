@@ -12,10 +12,7 @@ import path from 'node:path';
 
 const require = createRequire(import.meta.url);
 
-const CANDIDATES = [
-  '/home/ubuntu/zglu_Data/WebProjects/NematodeAtlas_Data-Dev',
-  process.cwd(),
-];
+const CANDIDATES = [process.env.PUPPETEER_PATH || '', process.cwd()].filter(Boolean);
 
 let puppeteer = null;
 for (const base of CANDIDATES) {

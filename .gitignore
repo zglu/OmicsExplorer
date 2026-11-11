@@ -21,6 +21,9 @@ examples/*/datasets.auto.yaml
 examples/*/local.yaml
 local.yaml
 
+# the private example project (unpublished data - it stays on this machine)
+examples/cs_of/
+
 # container / singularity images
 *.sif
 *.tar

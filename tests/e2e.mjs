@@ -11,11 +11,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 const require = createRequire(import.meta.url);
-const CANDIDATES = [
-  process.env.PUPPETEER_PATH || '',
-  '/home/ubuntu/zglu_Data/WebProjects/NematodeAtlas_Data-Dev',
-  process.cwd(),
-].filter(Boolean);
+const CANDIDATES = [process.env.PUPPETEER_PATH || '', process.cwd()].filter(Boolean);
 
 let puppeteer = null;
 for (const base of CANDIDATES) {

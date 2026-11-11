@@ -44,8 +44,8 @@ h5ad  ──▶  omicexplorer build  ──▶  data/  ──▶  omicexplorer s
 
 ## Screenshots
 
-All the pictures below are the *Cs/Of atlas* example (Stereo-seq and scRNA-seq
-of the liver flukes) as it is served by `omicexplorer serve`.
+All the pictures below were taken from the author's own (unpublished) dataset
+of the liver flukes, served with `omicexplorer serve`.
 
 ### The datasets
 
@@ -180,23 +180,18 @@ omicexplorer serve -p my_project/project.yaml
 # -> http://127.0.0.1:8080
 ```
 
-A ready-to-run example ships with the repository.  It describes the real
-*Clonorchis sinensis* / *Opisthorchis felineus* Stereo-seq and scRNA-seq data
-of the liver flukes; the data files themselves are not part of this repository
-(point `data_root` in `examples/cs_of/project.yaml` at your copy of them):
-
-```bash
-omicexplorer build -p examples/cs_of/project.yaml
-omicexplorer serve -p examples/cs_of/project.yaml
-```
-
-The smallest example is a single file:
+The smallest project is a single file:
 
 ```bash
 omicexplorer init my_project        # writes my_project/project.yaml
 # point it at your .h5ad, or just use the web UI (+ Data)
 omicexplorer serve -p my_project/project.yaml
 ```
+
+The screenshots below come from the author's own dataset (Stereo-seq and
+scRNA-seq of the liver flukes).  It is unpublished, so neither the data nor
+its manifest are part of this repository - copy the manifest section below
+into your own `project.yaml` to reproduce the same view.
 
 ---
 

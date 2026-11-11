@@ -1123,7 +1123,7 @@ async function updateCardsForGene() {
 
 /** Re-render any open in-card footer (dotplot or flows). */
 function refreshOpenDotplots() {
-  refreshOpenFeet();
+  refreshFeet();
 }
 
 async function applyCardGene(card, ds) {
@@ -1224,7 +1224,7 @@ function bindGlobalEvents() {
   window.addEventListener('resize', debounce(() => {
     repaintAll();
     app.cards.forEach((card) => fitCard(card));
-    refreshOpenFeet(); // the flows are drawn for the card width
+    refreshFeet(); // the flows are drawn for the card width
   }, 250));
 
   const close = $('#gene-close');
@@ -1323,10 +1323,12 @@ function refreshCardFoot(card, ds, force = false) {
   }
 }
 
-function refreshOpenFeet() {
-  app.cards.forEach((card) => {
-    if (card.cardFoot?.open) refreshCardFoot(card);
-  });
+/**
+ * Update the footer of every card: the label and the mode follow the query,
+ * the content is only drawn when the card is open.
+ */
+function refreshFeet() {
+  app.cards.forEach((card) => refreshCardFoot(card));
 }
 
 // ----------------------------------------------------- in-card gene dotplot
