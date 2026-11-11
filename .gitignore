@@ -17,6 +17,10 @@ examples/*/data/
 examples/*/uploads/
 examples/*/datasets.auto.yaml
 
+# the machine specific overrides of a project
+examples/*/local.yaml
+local.yaml
+
 # container / singularity images
 *.sif
 *.tar

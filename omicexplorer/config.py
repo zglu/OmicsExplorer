@@ -312,6 +312,17 @@ def _parse_images(raw: Any, ds_id: str, root: Path, data_root: Path | None = Non
 # --------------------------------------------------------------------------
 
 
+def _merge_raw(base: dict, override: dict) -> dict:
+    """Merge an override mapping into the manifest (lists are replaced)."""
+    out = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(out.get(key), dict):
+            out[key] = _merge_raw(out[key], value)
+        else:
+            out[key] = value
+    return out
+
+
 def load_project(path: str | Path) -> Project:
     """Load and validate a ``project.yaml``.
 
@@ -330,6 +341,16 @@ def load_project(path: str | Path) -> Project:
         raise ConfigError(f"{src}: top level must be a mapping")
 
     root = src.parent.resolve()
+
+    # a local.yaml next to the manifest overrides it - the place for the
+    # machine specific bits (where the data lives) that stay out of the repo
+    local = root / "local.yaml"
+    if local.exists():
+        with local.open("r", encoding="utf-8") as fh:
+            override = yaml.safe_load(fh) or {}
+        if not isinstance(override, dict):
+            raise ConfigError(f"{local}: top level must be a mapping")
+        raw = _merge_raw(raw, override)
     data_root_raw = raw.get("data_root")
     data_root = _resolve_path(data_root_raw, root) if data_root_raw else None
     project = Project(
