@@ -17,24 +17,75 @@ h5ad  ──▶  omicexplorer build  ──▶  data/  ──▶  omicexplorer s
                                                      └──▶ omicexplorer export ──▶ dist/ (static)
 ```
 
+![The OmicsExplorer web UI](docs/screenshots/01_overview.png)
+
 ---
 
 ## Features
 
 | | |
 |---|---|
-| **Datasets** | any number of `.h5ad` files, grouped into species |
+| **Datasets** | any number of `.h5ad` files (and Seurat `.rds`), grouped into species, added or removed from the UI |
 | **Embeddings** | every 2-D embedding in `obsm`, switchable per dataset (UMAP ⇄ PCA ⇄ **spatial**) |
 | **Groupings** | any `obs` column as a colour, with a stable palette per grouping, a legend with counts, and click-to-hide |
+| **Quantitative metadata** | `nCount_RNA`, signature scores and other numeric `obs` columns colour the cells (viridis ramp) |
 | **Spatial** | raw coordinates, bin-grid tiles vs cell dots, µm scale bar, histology image overlay with an optional affine transform |
-| **Interaction** | WebGL2 point cloud: wheel zoom, drag select, shift-drag pan, double click reset, hover tooltip |
-| **Gene query** | search by id, id suffix or description; feature plot in the *current* embedding (spatial included), per-group violins, multi-gene grid |
+| **Interaction** | WebGL2 point cloud: wheel zoom (anchored at the mouse), drag select, shift-drag pan, double click reset, hover tooltip |
+| **Gene query** | search by id, id suffix, prefix or description; feature plot in the *current* embedding, and a dot plot per dataset (mean expression · % cells, per gene or absolute) |
+| **Group flows** | the sankey and the stacked bars of two groupings, inside every card |
 | **Markers** | Seurat-style ROC statistics (`myAUC`, `log2FC`, `pct.1`, `pct.2`) and a dot plot that shows every marker in *every* category |
-| **Compare** | composition heat map + table across all datasets, with a canonical cell-type ontology to harmonise annotations |
-| **Explorer** | abundance per sample, origin of a cell type, highlight in the embedding |
+| **Compare** | composition heat map + table across all datasets, with a reference dataset and a canonical cell-type ontology |
 | **Selection** | brush a region and get its composition, with a legend and totals |
+| **Runs anywhere** | a Python server, a Docker/Apptainer image, or a plain static site that parses the `.h5ad` **in the browser** |
 | **Export** | every figure as PNG or SVG |
 | **Dark / light** | theme aware, canvas included |
+
+---
+
+## Screenshots
+
+All the pictures below are the *Cs/Of atlas* example (Stereo-seq and scRNA-seq
+of the liver flukes) as it is served by `omicexplorer serve`.
+
+### The datasets
+
+Every dataset is a card: its embedding, the metadata grouping, the legend with
+the cell counts and the composition per sample.  The cards can be dragged into
+another order and are shown side by side.
+
+![The dataset cards](docs/screenshots/01_overview.png)
+
+### Gene queries and dot plots
+
+A gene (or a prefix of many) colours the cells of every dataset that contains
+it, and every card gets a dot plot of the query: one row per category, the
+dot size is the share of expressing cells, the colour the mean expression -
+per gene or on one absolute scale.
+
+![Gene query and dot plot](docs/screenshots/03_gene_dotplot.png)
+
+### Group flows
+
+Inside a card two groupings can be compared: the sankey shows how the cells of
+one grouping flow into the other, the stacked bars below it the same split
+with the cell counts.
+
+![Sankey and stacked bars](docs/screenshots/02_sankey_bar.png)
+
+### Comparing the datasets
+
+The compare section puts all datasets next to each other: the composition of
+every dataset per category of the reference dataset, as a heat map and as a
+table.
+
+![The compare section](docs/screenshots/04_compare.png)
+
+### The built-in help
+
+Every installation explains itself: the `?` button shows which files are
+supported, where the data is stored and how to add or remove a dataset.
+
+![The help dialog](docs/screenshots/05_help.png)
 
 ---
 
