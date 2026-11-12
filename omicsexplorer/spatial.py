@@ -191,6 +191,11 @@ def analyse_spatial(
         size_um = spot_fullres * um_per_data if spot_fullres else 0.0
         image_scale = hires_scalef / um_per_data if hires_scalef else 0.0
 
+    # the spot diameter in the file is an estimate - never let the spots
+    # touch: they keep at most 60% of the grid pitch
+    if size_um > 0 and pitch > 0:
+        size_um = min(size_um, 0.6 * pitch * um_per_data)
+
     return {
         "pitch": pitch,
         "space": space,

@@ -586,10 +586,13 @@ function applyEmbedding(card, ds) {
   viewer.setCoords(xy);
   // bin-like data (one cell per grid position) is drawn as tiles, cell-like
   // data as small dots.
-  const isGrid = !!(emb.grid && emb.grid.is_grid);
-  viewer.setSquarePoints(isGrid);
-  viewer.setPointPitch(isGrid ? emb.grid.pitch : 0);
-  viewer.setPointSize(isGrid ? (emb.grid.size || 0) : 0);
+  const grid = emb.grid || {};
+  const isGrid = !!grid.is_grid;
+  // grid data is drawn as tiles; spots with a gap (Visium) stay round
+  const round = isGrid && grid.shape === 'circle';
+  viewer.setSquarePoints(isGrid && !round);
+  viewer.setPointPitch(isGrid ? grid.pitch : 0);
+  viewer.setPointSize(isGrid && !round ? 0 : (grid.size || 0));
   viewer.setLabels(emb.kind !== 'spatial');
   if (emb.kind === 'spatial' && ds.units) {
     viewer.setScaleBar({ units: ds.units, perUnit: 1 });

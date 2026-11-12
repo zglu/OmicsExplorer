@@ -50,8 +50,9 @@ def test_fullres_pixels_are_detected_and_converted():
     assert info["space"] == "fullres_px"
     # the Visium grid has a pitch of 100 um
     assert info["um_per_data"] == pytest.approx(100.0 / 29.0, rel=0.02)
-    # the spot diameter comes from the file
-    assert info["size"] == pytest.approx(19.289 * 100.0 / 29.0, rel=0.02)
+    # the spot diameter comes from the file, but never more than 60% of the
+    # grid pitch - so the spots cannot touch
+    assert info["size"] == pytest.approx(min(19.289 * 100.0 / 29.0, 0.6 * 100.0), rel=0.02)
     # the image: hires pixels per micron
     assert info["scale"] == pytest.approx(29.0 / 100.0 * 0.6667, rel=0.02)
 

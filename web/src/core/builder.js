@@ -36,6 +36,92 @@ function categoriesOf(values) {
   return [...counts.keys()].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 }
 
+/**
+ * The distance to the nearest neighbour (median) - the grid pitch.
+ * The median difference of the sorted coordinates does not work for the
+ * hexagonal Visium layout, where every row is offset by half a pitch.
+ */
+export function estimatePitch(xy) {
+  const n = xy.length / 2;
+  if (n < 2) return 0;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < n; i++) {
+    const x = xy[i * 2], y = xy[i * 2 + 1];
+    if (x < x0) x0 = x;
+    if (y < y0) y0 = y;
+    if (x > x1) x1 = x;
+    if (y > y1) y1 = y;
+  }
+  const cell = Math.max(1e-6, Math.max(x1 - x0, y1 - y0) / Math.sqrt(n));
+  const cols = Math.max(1, Math.ceil((x1 - x0) / cell) + 1);
+  const rows = Math.max(1, Math.ceil((y1 - y0) / cell) + 1);
+  const buckets = new Map();
+  for (let i = 0; i < n; i++) {
+    const bx = Math.floor((xy[i * 2] - x0) / cell);
+    const by = Math.floor((xy[i * 2 + 1] - y0) / cell);
+    const key = by * cols + bx;
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(i);
+  }
+  const dists = [];
+  for (let i = 0; i < n; i++) {
+    const bx = Math.floor((xy[i * 2] - x0) / cell);
+    const by = Math.floor((xy[i * 2 + 1] - y0) / cell);
+    let best = Infinity;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const list = buckets.get((by + dy) * cols + (bx + dx));
+        if (!list) continue;
+        for (const j of list) {
+          if (j === i) continue;
+          const ddx = xy[i * 2] - xy[j * 2];
+          const ddy = xy[i * 2 + 1] - xy[j * 2 + 1];
+          const d = ddx * ddx + ddy * ddy;
+          if (d < best) best = d;
+        }
+      }
+    }
+    if (best < Infinity) dists.push(Math.sqrt(best));
+  }
+  if (!dists.length) return 0;
+  dists.sort((a, b) => a - b);
+  return dists[Math.floor(dists.length / 2)];
+}
+
+/**
+ * The geometry of a spatial embedding: the grid pitch, the size of one spot
+ * and how many microns one data unit is.  Everything is converted to microns.
+ */
+export function analyseSpatial(xy, scalefactors, imageShape, fullresShape, visiumPitchUm = 100) {
+  const n = xy.length / 2;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < n; i++) {
+    const x = xy[i * 2], y = xy[i * 2 + 1];
+    if (x < x0) x0 = x;
+    if (y < y0) y0 = y;
+    if (x > x1) x1 = x;
+    if (y > y1) y1 = y;
+  }
+  const fits = (shape) => {
+    if (!shape || !shape[0] || !shape[1]) return false;
+    return x0 >= -1 && y0 >= -1 && x1 <= shape[1] + 1 && y1 <= shape[0] + 1;
+  };
+  const spotFullres = Number(scalefactors?.spot_diameter_fullres || 0);
+  const hiresScalef = Number(scalefactors?.tissue_hires_scalef || 0);
+  const pitch = estimatePitch(xy);
+  let space = 'um';
+  if (fits(imageShape)) space = 'hires_px';
+  else if (fits(fullresShape)) space = 'fullres_px';
+  const umPerData = space !== 'um' && pitch > 0 ? visiumPitchUm / pitch : 1;
+  let sizeUm = space === 'fullres_px' ? spotFullres * umPerData
+    : space === 'hires_px' ? spotFullres * hiresScalef * umPerData
+      : 0;
+  // the spot diameter in the file is an estimate - never let the spots
+  // touch: they keep at most 60% of the grid pitch
+  if (sizeUm > 0 && pitch > 0) sizeUm = Math.min(sizeUm, 0.6 * pitch * umPerData);
+  return { pitch, space, umPerData, size: sizeUm };
+}
+
 /** Pick the groupings and the embeddings to use. */
 export function detectContent(h5ad, groups = null, embeddings = null) {
   const groupNames = [];
@@ -134,8 +220,58 @@ function matrixToGeneMajor(X, nCells) {
  * @param {File|ArrayBuffer} file
  * @param {object} opts  {id, name, groups, embeddings}
  */
+/** The spatial metadata of an h5ad: scalefactors and the image sizes. */
+async function readSpatialMeta(file) {
+  try {
+    const lib = await loadH5();
+    const buffer = file instanceof ArrayBuffer ? file : await file.arrayBuffer();
+    const name = 'meta.h5ad';
+    lib.FS.writeFile(name, new Uint8Array(buffer));
+    let h5file;
+    try {
+      h5file = new lib.File(name, 'r');
+      const uns = h5file.get('uns');
+      if (!uns) return null;
+      const spatial = uns.get('spatial');
+      if (!spatial) return null;
+      for (const sample of spatial.keys()) {
+        if (sample.startsWith('_')) continue;
+        const group = spatial.get(sample);
+        if (!group || !group.get) continue;
+        const scalefactors = {};
+        const sf = group.get('scalefactors');
+        if (sf) {
+          for (const key of sf.keys()) {
+            const v = sf.get(key);
+            const value = v && v.json_value !== undefined ? v.json_value : v?.value;
+            scalefactors[key] = Number(Array.isArray(value) ? value[0] : value);
+          }
+        }
+        const shapeOf = (imgName) => {
+          const node = group.get('images')?.get(imgName);
+          return node && node.shape ? [Number(node.shape[0]), Number(node.shape[1])] : [0, 0];
+        };
+        return {
+          sample,
+          scalefactors,
+          hiresShape: shapeOf('hires'),
+          fullresShape: shapeOf('fullres'),
+        };
+      }
+      return null;
+    } finally {
+      try { h5file?.close(); } catch (err) { /* ignore */ }
+      try { lib.FS.unlink(name); } catch (err) { /* ignore */ }
+    }
+  } catch (err) {
+    console.warn('could not read the spatial metadata', err);
+    return null;
+  }
+}
+
 export async function buildDatasetFromH5ad(file, opts = {}) {
   const h5ad = await readH5ad(file);
+  const spatialMeta = await readSpatialMeta(file);
   const content = detectContent(h5ad, opts.groups, opts.embeddings);
   const id = opts.id || slug(opts.name || 'dataset');
   const dir = `data/${id}`;
@@ -179,10 +315,31 @@ export async function buildDatasetFromH5ad(file, opts = {}) {
     await putFile(`${dir}/obsm/${name}.bin`, Float32Array.from(arr.values).buffer);
   }
 
+  // --- the geometry of the spatial embedding (microns) -------------------
+  const grids = {};
+  if (spatialMeta && h5ad.obsm) {
+    for (const [name, arr] of Object.entries(h5ad.obsm)) {
+      const info = analyseSpatial(arr.values, spatialMeta.scalefactors, spatialMeta.hiresShape, spatialMeta.fullresShape);
+      if (!info.pitch) continue;
+      // the coordinates are converted to microns
+      const xy = arr.values;
+      for (let i = 0; i < xy.length; i++) xy[i] *= info.umPerData;
+      grids[name] = {
+        is_grid: true,
+        pitch: info.pitch * info.umPerData,
+        size: info.size,
+        space: info.space,
+        // spots with a gap (Visium) are round, contiguous bins are square
+        shape: info.size && info.size < info.pitch * info.umPerData * 0.95 ? 'circle' : 'square',
+      };
+    }
+  }
+
   // --- index.json ------------------------------------------------------
   const indexPayload = {
     id,
     name: opts.name || id,
+    grids,
     species: opts.species || '',
     kind: 'umap',
     description: `Added in the browser from ${opts.filename || 'a h5ad file'}`,
@@ -192,8 +349,9 @@ export async function buildDatasetFromH5ad(file, opts = {}) {
     embeddings: content.embeddings.map((name) => ({
       name,
       label: name,
-      kind: 'umap',
+      kind: name === 'spatial' ? 'spatial' : 'umap',
       columns: [`${name}_1`, `${name}_2`],
+      grid: grids[name] || undefined,
     })),
     obs: content.groups,
     categories: Object.fromEntries(content.groups.map((g) => [g, content.categories[g] || []])),

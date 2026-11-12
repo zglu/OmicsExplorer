@@ -670,7 +670,10 @@ export class ScatterViewer {
     let radius = 0.62 * Math.sqrt(perCell / Math.PI);
     if (this.n < 400) radius = Math.min(radius, 1.8); // few cells: keep them small
     radius = Math.max(0.55, Math.min(3, radius));
-    return Math.max(1, 2 * radius * this._dpr); // gl_PointSize is the diameter
+    let diameter = 2 * radius; // gl_PointSize is the diameter
+    // a spot with a known diameter (Visium) is never drawn bigger than it is
+    if (this.dotSize) diameter = Math.min(diameter, this.dotSize * this.view.scale);
+    return Math.max(1, Math.min(512, diameter) * this._dpr);
   }
 
   /**

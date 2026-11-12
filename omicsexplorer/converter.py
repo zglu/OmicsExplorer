@@ -466,6 +466,11 @@ def build_dataset(
             if size > 0:
                 grids[e.name]["size"] = float(size)
                 grids[e.name]["space"] = info["space"]
+                # spots with a gap (Visium) are round, contiguous bins are square
+                pitch = float(grids[e.name].get("pitch") or 0)
+                grids[e.name]["shape"] = (
+                    "circle" if (pitch > 0 and size < pitch * 0.95) else "square"
+                )
             tr = image_transform(info)
             if tr:
                 images[-1]["transform"] = tr
