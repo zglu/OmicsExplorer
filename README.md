@@ -1,6 +1,6 @@
 # OmicsExplorer
 
-A **local** visualisation platform for single-cell and spatial omics, supports multiple datasets at the same time.
+A **local** visualisation platform for single-cell and spatial omics, supporting **multiple datasets** at the same time.
 
 Point it at one or more `.h5ad` files and you get an interactive web app:
 every embedding of a dataset (UMAP, PCA, **spatial**), any metadata grouping as
@@ -358,8 +358,8 @@ it is not installed already.
 
 ## Author
 
-OmicsExplorer is written and maintained by **zglu**
-(<https://github.com/zglu>).
+OmicsExplorer is designed and developed by **zglu**
+(<https://github.com/zglu>), with the power of AI.
 
 ## Licence
 
