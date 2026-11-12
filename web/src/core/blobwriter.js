@@ -7,20 +7,34 @@
 //   X.bin         one gzip block per gene: varint deltas of the cell indices,
 //                 then the high bytes and the low bytes of the 16 bit values.
 
+/**
+ * Round like numpy's rint (half to even) - the python writer is the
+ * reference, so the two encoders have to agree bit by bit.
+ */
+function roundHalfToEven(x) {
+  const floor = Math.floor(x);
+  const diff = x - floor;
+  if (diff > 0.5) return floor + 1;
+  if (diff < 0.5) return floor;
+  return floor % 2 === 0 ? floor : floor + 1;
+}
+
 /** Quantise the values and encode one gene block. */
 function encodeGeneBlock(cells, values, scale) {
   const n = cells.length;
   if (!n) return new Uint8Array(0);
   const q = new Uint16Array(n);
   for (let i = 0; i < n; i++) {
-    const v = Math.round((values[i] || 0) / scale);
+    const v = roundHalfToEven((values[i] || 0) / scale);
     q[i] = v < 0 ? 0 : v > 65535 ? 65535 : v;
   }
   // varint deltas of the cell indices (ascending, starting at 0)
+  // the format is: delta[i] = cells[i] - cells[i-1] + 1 (with cells[-1] = -1),
+  // exactly what the python writer (omicexplorer/blob.py) produces
   const deltas = [];
   let prev = -1;
   for (let i = 0; i < n; i++) {
-    deltas.push(cells[i] - prev);
+    deltas.push(cells[i] - prev + 1);
     prev = cells[i];
   }
   const varintBytes = [];
@@ -59,12 +73,13 @@ async function gzip(bytes) {
  * @param {Float32Array} values     the value of every stored entry
  * @param {Int32Array} indptr       gene g owns entries [indptr[g], indptr[g+1])
  * @param {number} nCells
+ * @param {number} [scale]          quantisation step (default: max / 65535)
  * @returns {Promise<{blob: Blob, index: object}>}
  */
-export async function buildExpressionBlob(genes, cellIndices, values, indptr, nCells) {
+export async function buildExpressionBlob(genes, cellIndices, values, indptr, nCells, scale = null) {
   let max = 0;
   for (let i = 0; i < values.length; i++) if (values[i] > max) max = values[i];
-  const scale = max > 0 ? max / 65535 : 1;
+  const step = scale != null && scale > 0 ? scale : (max > 0 ? max / 65535 : 1);
   const chunks = [];
   const map = {};
   let offset = 0;
@@ -78,13 +93,13 @@ export async function buildExpressionBlob(genes, cellIndices, values, indptr, nC
     }
     const cells = cellIndices.slice(a, b);
     const vals = values.slice(a, b);
-    const block = await gzip(encodeGeneBlock(cells, vals, scale));
+    const block = await gzip(encodeGeneBlock(cells, vals, step));
     chunks.push(block);
     map[genes[g]] = [offset, block.length, n];
     offset += block.length;
   }
   return {
     blob: new Blob(chunks, { type: 'application/octet-stream' }),
-    index: { n: nCells, scale, genes: map },
+    index: { n: nCells, scale: step, genes: map },
   };
 }

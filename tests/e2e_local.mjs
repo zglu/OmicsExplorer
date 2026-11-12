@@ -171,6 +171,45 @@ s = await page.evaluate(() => {
 });
 check('the dotplot is built from the local blob', s && s.rows >= 2 && s.dots >= 1, JSON.stringify(s));
 
+// the values of the blob have to land on the right cells (the encoding is
+// shared with the python side, a mismatch shifts every value by one cell)
+const values = await page.evaluate(async () => {
+  const mod = await import('./src/core/data.js');
+  const { listFiles } = await import('./src/core/localfs.js');
+  const files = await listFiles('data/');
+  const dir = files.find((f) => /\/index\.json$/.test(f) && !f.endsWith('project.json'));
+  const id = dir.replace('data/', '').replace('/index.json', '');
+  const ds = await mod.loadDataset(id);
+  const expr = await mod.loadGeneExpr(ds, 'GENE_005');
+  const codes = ds.codes.get('cell_type');
+  const cats = ds.categories['cell_type'];
+  const groups = {};
+  for (let i = 0; i < ds.n; i++) {
+    const c = codes[i];
+    const cat = c >= 0 ? cats[c] : 'unknown';
+    groups[cat] = groups[cat] || { sum: 0, n: 0 };
+    groups[cat].sum += expr.values[i] || 0;
+    groups[cat].n += 1;
+  }
+  return {
+    nnz: expr.nnz,
+    max: expr.max,
+    means: Object.fromEntries(
+      Object.entries(groups).map(([k, g]) => [k, +(g.sum / g.n).toFixed(2)])
+    ),
+  };
+});
+// the reference values (computed with anndata from tests/fixtures/tiny.h5ad)
+//   A 2.07 · B 1.76 · C 1.88 · max 4.0 · 89 expressing cells
+check('the expression lands on the right cells', values.nnz === 89 && Math.abs(values.max - 4) < 0.05, JSON.stringify(values));
+check(
+  'the category means are correct',
+  Math.abs(values.means.A - 2.07) < 0.02 &&
+    Math.abs(values.means.B - 1.76) < 0.02 &&
+    Math.abs(values.means.C - 1.88) < 0.02,
+  JSON.stringify(values.means)
+);
+
 console.log('\n# the data survives a reload');
 await page.reload({ waitUntil: 'networkidle2' });
 await wait(3000);
