@@ -589,6 +589,7 @@ function applyEmbedding(card, ds) {
   const isGrid = !!(emb.grid && emb.grid.is_grid);
   viewer.setSquarePoints(isGrid);
   viewer.setPointPitch(isGrid ? emb.grid.pitch : 0);
+  viewer.setPointSize(isGrid ? (emb.grid.size || 0) : 0);
   viewer.setLabels(emb.kind !== 'spatial');
   if (emb.kind === 'spatial' && ds.units) {
     viewer.setScaleBar({ units: ds.units, perUnit: 1 });

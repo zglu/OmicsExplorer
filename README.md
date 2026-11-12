@@ -297,8 +297,9 @@ omicsexplorer serve-static -d dist 8080   # the bundled server, range enabled
 > handle ranges correctly.
 
 Details, including the data format and how to reduce the size of the bundle,
-are in [`docs/DATA_FORMAT.md`](docs/DATA_FORMAT.md) and
-[`docs/DEPLOY.md`](docs/DEPLOY.md).  The container workflow (Docker,
+are in [`docs/DATA_FORMAT.md`](docs/DATA_FORMAT.md),
+[`docs/DEPLOY.md`](docs/DEPLOY.md) and [`docs/SPATIAL.md`](docs/SPATIAL.md)
+(the spatial / Visium support).  The container workflow (Docker,
 Apptainer, HPC) is documented in [`docs/DOCKER.md`](docs/DOCKER.md).
 
 ---

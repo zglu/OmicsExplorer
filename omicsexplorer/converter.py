@@ -41,6 +41,7 @@ from .config import (
     guess_group_label,
     load_project,
 )
+from .spatial import analyse_spatial, image_transform, read_spatial_uns
 from .h5ad_io import (
     feature_names,
     list_obsm,
@@ -410,6 +411,70 @@ def build_dataset(
             }
         )
 
+    # a spatial h5ad (Visium) carries the tissue image inside the file
+    spatial_info: dict[str, Any] = {}
+    if not images:
+        try:
+            spatial_info = read_spatial_uns(ds.path)
+        except (OSError, ValueError, KeyError):
+            spatial_info = {}
+        if spatial_info.get("image") is not None:
+            from .spatial import _png_bytes
+
+            rel = Path("img") / f"{ds.id}__tissue_hires.png"
+            (out_dir / rel).parent.mkdir(parents=True, exist_ok=True)
+            (out_dir / rel).write_bytes(_png_bytes(spatial_info["image"]))
+            images.append(
+                {
+                    "path": str(rel).replace("\\", "/"),
+                    "label": "Tissue image",
+                    "transform": {},
+                }
+            )
+            log(f"[{ds.id}] extracted the tissue image from the h5ad")
+
+    # ---- the geometry of every embedding --------------------------------
+    grids: dict[str, dict[str, Any]] = {
+        e.name: _grid_info(emb_arrays[e.name]) for e in embeddings
+    }
+
+    # ---- spatial extras (spot size + the image transform) ---------------
+    if spatial_info.get("scalefactors") and images:
+        for e in embeddings:
+            if e.kind != "spatial":
+                continue
+            xy = emb_arrays.get(e.name)
+            if xy is None or xy.size == 0:
+                continue
+            info = analyse_spatial(
+                xy,
+                spatial_info["scalefactors"],
+                image_shape=spatial_info.get("image_shape") or (0, 0),
+                fullres_shape=spatial_info.get("fullres_shape") or (0, 0),
+            )
+            um_per_data = info["um_per_data"]
+            if um_per_data and abs(um_per_data - 1.0) > 1e-6:
+                # the coordinates are in pixels - use microns everywhere so that
+                # the scale bar and the image alignment are correct
+                emb_arrays[e.name] = xy * um_per_data
+                grids[e.name] = _grid_info(emb_arrays[e.name])
+                # the median difference of the sorted coordinates is useless for
+                # the hexagonal Visium layout - use the distance to the nearest
+                # neighbour instead (the real grid pitch)
+                grids[e.name]["pitch"] = float(info["pitch"] * um_per_data)
+            size = info["size"]
+            if size > 0:
+                grids[e.name]["size"] = float(size)
+                grids[e.name]["space"] = info["space"]
+            tr = image_transform(info)
+            if tr:
+                images[-1]["transform"] = tr
+                grids[e.name]["image_transform"] = tr
+                log(
+                    f"[{ds.id}] spatial grid: pitch {info['pitch']:.1f} um, spot {size:.1f} um "
+                    f"({info['space']}), image transform {tr}"
+                )
+
     # ---- index.json -----------------------------------------------------
     samples: list[dict[str, Any]] = []
     sample_group = next((g for g in groups if g.name == "sample"), None)
@@ -454,7 +519,7 @@ def build_dataset(
                 "label": e.display,
                 "kind": e.kind,
                 "columns": [f"{e.name}_1", f"{e.name}_2"],
-                "grid": _grid_info(emb_arrays[e.name]),
+                "grid": grids.get(e.name, {}),
             }
             for e in embeddings
         ],

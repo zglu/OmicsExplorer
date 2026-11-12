@@ -302,6 +302,11 @@ export class ScatterViewer {
     this.pitch = pitch || 0;
   }
 
+  /** The real diameter of one spot/bin (0 = use the grid pitch). */
+  setPointSize(size) {
+    this.dotSize = size || 0;
+  }
+
   /**
    * Draw a scale bar.  `perUnit` is how many data units make up one physical
    * unit (for Stereo-seq the coordinates are already micrometres, so 1).
@@ -645,11 +650,16 @@ export class ScatterViewer {
   pointSize() {
     if (!this.n) return 2;
     if (this.squarePoints) {
-      // spatial bins: one square per bin, so they never overlap
+      // spatial bins: one square per bin, so they never overlap.  `dotSize` is
+      // the real diameter of a spot (Visium: 100 um on a 200 um grid) - the
+      // pitch is only the fallback.
       const pitch = this.pitch || this.estimateGridPitch();
-      if (pitch > 0) {
-        const px = pitch * this.view.scale;
-        return Math.max(1, Math.min(24, px) * this._dpr);
+      const unit = this.dotSize || pitch;
+      if (unit > 0) {
+        // no hard limit: when the user zooms in the tiles have to grow with
+        // the grid, otherwise the tissue falls apart into separate dots
+        const px = unit * this.view.scale;
+        return Math.max(1, Math.min(512, px) * this._dpr);
       }
     }
     // How much screen space does one cell get?  The radius is derived from

@@ -41,15 +41,21 @@ function toNumbers(values) {
  */
 function valuesOf(node) {
   if (!node) return null;
-  if (node.json_value !== undefined) return node.json_value;
-  return node.value;
+  try {
+    if (node.json_value !== undefined && node.json_value !== null) return node.json_value;
+  } catch (err) { /* fall through to .value */ }
+  try {
+    if (node.value !== undefined && node.value !== null) return node.value;
+  } catch (err) { /* unsupported dtype */ }
+  return null;
 }
 
 /** Read one dataset of the h5ad into plain JS arrays. */
 function readDataset(ds) {
   const value = valuesOf(ds);
   const shape = ds.shape || [];
-  const n = shape.length ? shape[0] : (value ? value.length : 0);
+  if (!value) return null; // a dtype the wasm build cannot read
+  const n = shape.length ? shape[0] : value.length;
   const out = new Array(n);
   for (let i = 0; i < n; i++) out[i] = value[i];
   return { values: out, shape, dtype: ds.dtype };
@@ -118,6 +124,7 @@ export async function readH5ad(file) {
           }
         } else {
           const d = readDataset(node);
+          if (!d) continue; // an unsupported dtype - better to skip it
           obs[key] = { type: isNumeric(d.dtype) ? 'number' : 'string', values: d.values };
         }
       }
@@ -131,12 +138,15 @@ export async function readH5ad(file) {
       if (idx && idx.length) {
         genes = idx;
       } else {
-        for (const key of ['_index', 'gene_symbols', 'gene_name', 'feature_name']) {
+        // not every h5ad has a var/_index (cellxgene style files keep the
+        // gene ids in gene_ids / feature_name)
+        for (const key of ['gene_ids', 'feature_name', 'gene_name', 'gene_symbols', 'symbol', 'id']) {
           const node = varGroup.get(key);
-          if (node) {
-            genes = Array.from(valuesOf(node)).map((x) => String(x));
-            break;
-          }
+          if (!node || node.get) continue; // a group (categorical) is no use here
+          const values = valuesOf(node);
+          if (!values || !values.length) continue;
+          genes = Array.from(values).map((x) => String(x));
+          break;
         }
       }
     }
@@ -216,5 +226,9 @@ function readAttr(node, name) {
   if (!attrs) return null;
   const a = attrs[name];
   if (!a) return null;
-  return toNumbers(Array.from(a.value));
+  // an attribute is a plain string - Array.from() would split it into letters
+  const v = valuesOf(a);
+  if (v == null) return null;
+  if (typeof v === 'string') return [v];
+  return toNumbers(Array.from(v));
 }

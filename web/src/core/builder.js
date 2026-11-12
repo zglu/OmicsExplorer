@@ -29,7 +29,10 @@ function encodeNumbers(values) {
 /** The categories of a grouping (sorted like the python side does). */
 function categoriesOf(values) {
   const counts = new Map();
-  values.forEach((v) => counts.set(v, (counts.get(v) || 0) + 1));
+  values.forEach((v) => {
+    const key = String(v);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  });
   return [...counts.keys()].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 }
 
@@ -81,11 +84,16 @@ function matrixToGeneMajor(X, nCells) {
     return { cellIndices: Int32Array.from(cellIndices), values: Float32Array.from(values), indptr };
   }
   // sparse
-  const { data, indices, indptr: srcPtr, encoding } = X;
+  const { data, indices, indptr: srcPtr } = X;
   const outIdx = [];
   const outVal = [];
   const outPtr = new Int32Array(nGenes + 1);
-  if (encoding === 'csr_matrix') {
+  // the encoding says how the matrix is stored; when it is missing the length
+  // of indptr does (nGenes + 1 -> gene major, nCells + 1 -> cell major)
+  const geneMajor = X.encoding
+    ? String(X.encoding).startsWith('csc')
+    : srcPtr.length === nGenes + 1;
+  if (!geneMajor) {
     // csr: rows are cells, columns are genes -> transpose
     const counts = new Int32Array(nGenes);
     for (let k = 0; k < indices.length; k++) counts[indices[k]]++;
