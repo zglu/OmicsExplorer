@@ -210,9 +210,8 @@ async function discoverLocal(file) {
     dialog.info = payload;
     renderInfo(payload);
   } catch (err) {
-    console.error('DL-ERROR', err && err.stack ? err.stack : String(err));
-    info.innerHTML = `<p class="muted small">Could not read the file: ${esc(String(err.message || err))}` +
-      `<span class="muted small"> (${esc(String((err.stack || '').split('\n')[1] || ''))})</span></p>`;
+    console.error(err);
+    info.innerHTML = `<p class="muted small">Could not read the file: ${esc(String(err.message || err))}</p>`;
   }
 }
 
