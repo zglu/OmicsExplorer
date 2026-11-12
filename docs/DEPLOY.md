@@ -3,7 +3,7 @@
 ## 1. Build a self contained folder
 
 ```bash
-omicexplorer export -p my_project/project.yaml -o dist
+omicsexplorer export -p my_project/project.yaml -o dist
 ```
 
 ```
@@ -24,13 +24,13 @@ dist/
 > gene panel stays empty - use the bundled server for a quick check:
 >
 > ```bash
-> omicexplorer serve-static -d dist 8080
+> omicsexplorer serve-static -d dist 8080
 > ```
 
 ### Any static server with range support
 
 ```bash
-omicexplorer serve-static -d dist 8080   # range requests enabled
+omicsexplorer serve-static -d dist 8080   # range requests enabled
 ```
 
 ### nginx
@@ -39,7 +39,7 @@ omicexplorer serve-static -d dist 8080   # range requests enabled
 server {
     listen 443 ssl;
     server_name atlas.example.org;
-    root /srv/omicexplorer/dist;
+    root /srv/omicsexplorer/dist;
 
     # the expression blob is read gene by gene with range requests
     location / {
@@ -69,12 +69,12 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY dist /app
 EXPOSE 8080
-CMD ["python3", "-m", "omicexplorer.cli", "serve-static", "-d", "/app", "--port", "8080"]
+CMD ["python3", "-m", "omicsexplorer.cli", "serve-static", "-d", "/app", "--port", "8080"]
 ```
 
 ```bash
-docker build -t omicexplorer .
-docker run -p 8080:8080 omicexplorer
+docker build -t omicsexplorer .
+docker run -p 8080:8080 omicsexplorer
 ```
 
 (`python3 -m http.server` also works in the container, but it does not support
@@ -85,7 +85,7 @@ For a production server put nginx in front of it and terminate TLS there.
 ## 3. Keep the local server for development
 
 ```bash
-omicexplorer serve -p my_project/project.yaml --port 8080
+omicsexplorer serve -p my_project/project.yaml --port 8080
 ```
 
 The local server

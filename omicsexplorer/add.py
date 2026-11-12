@@ -4,14 +4,14 @@ The pipeline is the same as the offline ``build``:
 
   1. *discover* an h5ad: cells, features and the metadata groupings /
      embeddings that the file actually contains;
-  2. *add*: build a :class:`~omicexplorer.config.DatasetSpec`, append it to
+  2. *add*: build a :class:`~omicsexplorer.config.DatasetSpec`, append it to
      ``datasets.auto.yaml`` next to the project manifest, convert it into the
      static bundle and register it in ``project.json`` / ``genes.json``.
 
 Everything runs in a small background job so the browser can follow the
 progress; the UI reloads the project when the job is done.
 
-A restart is lossless: the manifest merge in :mod:`omicexplorer.config`
+A restart is lossless: the manifest merge in :mod:`omicsexplorer.config`
 picks ``datasets.auto.yaml`` up again (the bundle on disk is reused).
 """
 

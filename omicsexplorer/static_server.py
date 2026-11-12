@@ -3,7 +3,7 @@
 ``python3 -m http.server`` ignores the ``Range`` header, and the expression
 blob is read gene by gene with a range request - without range support the
 gene panel stays empty.  This module is the same trick the ``nematode-atlas``
-project uses, and it is what ``omicexplorer serve-static`` runs.
+project uses, and it is what ``omicsexplorer serve-static`` runs.
 
 It is meant for testing an exported bundle locally; for production use any
 real web server (nginx, Caddy, GitHub Pages, ...).
@@ -86,7 +86,7 @@ class RangeRequestHandler(SimpleHTTPRequestHandler):
         return _BytesReader(chunk)
 
     def log_message(self, fmt, *args):  # pragma: no cover - quieter output
-        if os.environ.get("OMICEXPLORER_QUIET"):
+        if os.environ.get("OMICSEXPLORER_QUIET"):
             return
         super().log_message(fmt, *args)
 

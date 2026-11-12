@@ -1,6 +1,6 @@
 """HTTP layer: a tiny static server with Range support plus a few JSON APIs.
 
-The web app is a pure static site.  ``omicexplorer serve`` mounts the built
+The web app is a pure static site.  ``omicsexplorer serve`` mounts the built
 bundle under ``/data`` and the frontend under ``/``; because Starlette's
 ``FileResponse`` implements HTTP range requests, the ``X.bin`` expression blob
 can be read gene by gene straight from disk - exactly the same code path a
@@ -27,11 +27,12 @@ def _web_root() -> Path:
     """Locate the bundled frontend.
 
     Works in a source checkout (``<repo>/web``) and in an installed package
-    (``site-packages/web``).  ``OMICEXPLORER_WEB`` overrides both.
+    (``site-packages/web``).  ``OMICSEXPLORER_WEB`` overrides both.
     """
     import os
 
-    override = os.environ.get("OMICEXPLORER_WEB")
+    # the old spelling still works
+    override = os.environ.get("OMICSEXPLORER_WEB") or os.environ.get("OMICEXPLORER_WEB")
     if override:
         return Path(override).expanduser().resolve()
     here = Path(__file__).resolve().parent
@@ -39,7 +40,7 @@ def _web_root() -> Path:
         if candidate.exists():
             return candidate
     raise FileNotFoundError(
-        "cannot find the web/ directory - set OMICEXPLORER_WEB to point at it"
+        "cannot find the web/ directory - set OMICSEXPLORER_WEB to point at it"
     )
 
 
@@ -53,7 +54,7 @@ def create_app(data_dir: Path, web_dir: Path | None = None, *, project: Any = No
     web_dir
         Directory with the frontend; defaults to the bundled ``web/``.
     project
-        Optional :class:`omicexplorer.config.Project` used by the API routes.
+        Optional :class:`omicsexplorer.config.Project` used by the API routes.
     """
     from fastapi import Body, FastAPI, HTTPException, Query, Request
     from fastapi.responses import FileResponse, JSONResponse
@@ -132,7 +133,7 @@ def create_app(data_dir: Path, web_dir: Path | None = None, *, project: Any = No
 
     # ---- adding datasets at runtime (web UI) -----------------------------
 
-    _required_project = "this endpoint needs a project manifest (omicexplorer serve with a project)"
+    _required_project = "this endpoint needs a project manifest (omicsexplorer serve with a project)"
 
     @app.post("/api/upload")
     async def api_upload(request: Request, name: str = Query("data.h5ad")) -> JSONResponse:

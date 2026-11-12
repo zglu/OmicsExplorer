@@ -1,7 +1,7 @@
 # OmicsExplorer - a ready-to-use container for the web UI.
 #
-#   docker build -t omicexplorer .
-#   docker run --rm -p 8080:8080 -v "$PWD/my_project:/project" omicexplorer
+#   docker build -t omicsexplorer .
+#   docker run --rm -p 8080:8080 -v "$PWD/my_project:/project" omicsexplorer
 #
 # The image contains R + Seurat, so Seurat .rds files can be uploaded through
 # the web UI as well.
@@ -9,11 +9,11 @@
 # A smaller image without R (.h5ad only):
 #
 #   docker build --build-arg WITH_R=0 \
-#       --build-arg BASE_IMAGE=python:3.12-slim-bookworm -t omicexplorer:slim .
+#       --build-arg BASE_IMAGE=python:3.12-slim-bookworm -t omicsexplorer:slim .
 #
 # Apptainer / Singularity:
-#   apptainer build omicexplorer.sif docker-daemon://omicexplorer:latest
-#   apptainer run --bind "$PWD/my_project:/project" omicexplorer.sif
+#   apptainer build omicsexplorer.sif docker-daemon://omicsexplorer:latest
+#   apptainer run --bind "$PWD/my_project:/project" omicsexplorer.sif
 #
 ARG BASE_IMAGE=rocker/r-ver:4.4.2
 FROM ${BASE_IMAGE}
@@ -23,8 +23,8 @@ LABEL org.opencontainers.image.title="OmicsExplorer" \
       org.opencontainers.image.licenses="MIT"
 
 ENV DEBIAN_FRONTEND=noninteractive \
-    OMICEXPLORER_HOME=/project \
-    PATH=/opt/omicexplorer/bin:$PATH \
+    OMICSEXPLORER_HOME=/project \
+    PATH=/opt/omicsexplorer/bin:$PATH \
     R_LIBS_SITE=/usr/local/lib/R/site-library
 
 ARG WITH_R=1
@@ -62,20 +62,20 @@ RUN if [ "$WITH_R" = "1" ]; then \
 # --------------------------------------------------------------- python / app
 WORKDIR /src
 COPY pyproject.toml README.md ./
-COPY omicexplorer ./omicexplorer
+COPY omicsexplorer ./omicsexplorer
 COPY web ./web
-RUN python3.12 -m venv /opt/omicexplorer \
-    && /opt/omicexplorer/bin/pip install --no-cache-dir --upgrade pip wheel \
-    && /opt/omicexplorer/bin/pip install --no-cache-dir ".[server]"
+RUN python3.12 -m venv /opt/omicsexplorer \
+    && /opt/omicsexplorer/bin/pip install --no-cache-dir --upgrade pip wheel \
+    && /opt/omicsexplorer/bin/pip install --no-cache-dir ".[server]"
 
 # ------------------------------------------------------------------- runtime
-ENV OMICEXPLORER_WEB=/opt/omicexplorer/lib/python3.12/site-packages/web
+ENV OMICSEXPLORER_WEB=/opt/omicsexplorer/lib/python3.12/site-packages/web
 VOLUME ["/project"]
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -fsS http://127.0.0.1:8080/api/health || exit 1
 
-COPY docker/entrypoint.sh /usr/local/bin/omicexplorer-entrypoint
-RUN chmod +x /usr/local/bin/omicexplorer-entrypoint
-ENTRYPOINT ["/usr/local/bin/omicexplorer-entrypoint"]
+COPY docker/entrypoint.sh /usr/local/bin/omicsexplorer-entrypoint
+RUN chmod +x /usr/local/bin/omicsexplorer-entrypoint
+ENTRYPOINT ["/usr/local/bin/omicsexplorer-entrypoint"]
 CMD ["serve", "-p", "/project/project.yaml", "--host", "0.0.0.0", "--port", "8080"]

@@ -1,9 +1,9 @@
 """Command line interface.
 
-    omicexplorer init                 scaffold a project.yaml
-    omicexplorer build                h5ad files -> static bundle
-    omicexplorer serve                build + run the local web server
-    omicexplorer export               build a self contained folder to deploy
+    omicsexplorer init                 scaffold a project.yaml
+    omicsexplorer build                h5ad files -> static bundle
+    omicsexplorer serve                build + run the local web server
+    omicsexplorer export               build a self contained folder to deploy
 """
 
 from __future__ import annotations
@@ -22,9 +22,9 @@ __all__ = ["main"]
 _TEMPLATE = """\
 # OmicsExplorer project manifest
 #
-#   omicexplorer build            # convert the h5ad files into web/data
-#   omicexplorer serve            # build + serve on http://127.0.0.1:8080
-#   omicexplorer export -o dist   # build a folder you can host anywhere
+#   omicsexplorer build            # convert the h5ad files into web/data
+#   omicsexplorer serve            # build + serve on http://127.0.0.1:8080
+#   omicsexplorer export -o dist   # build a folder you can host anywhere
 
 name: {name}
 subtitle: {subtitle}
@@ -77,7 +77,7 @@ def _cmd_init(args: argparse.Namespace) -> int:
         encoding="utf-8",
     )
     print(f"wrote {manifest}")
-    print("edit it, then run:  omicexplorer build && omicexplorer serve")
+    print("edit it, then run:  omicsexplorer build && omicsexplorer serve")
     print("tip: delete the 'datasets' entries (or write 'datasets: []') to open")
     print("     an empty app and add every dataset through the web (+ Data) UI")
     return 0
@@ -167,7 +167,7 @@ def _cmd_export(args: argparse.Namespace) -> int:
         )
     print(f"deployable bundle written to {out}")
     print("serve it with any static host that supports HTTP range requests:")
-    print(f"  omicexplorer serve-static -d {out} 8080")
+    print(f"  omicsexplorer serve-static -d {out} 8080")
     return 0
 
 
@@ -196,7 +196,7 @@ def _cmd_markers(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="omicexplorer", description=__doc__)
+    parser = argparse.ArgumentParser(prog="omicsexplorer", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_init = sub.add_parser("init", help="scaffold a project.yaml")

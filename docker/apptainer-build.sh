@@ -6,11 +6,11 @@
 # Step 1 needs a Docker daemon, step 2 needs apptainer (or singularity).
 # Afterwards the image runs like the Docker one:
 #
-#   apptainer run --bind "$PWD/my_project:/project" omicexplorer.sif
+#   apptainer run --bind "$PWD/my_project:/project" omicsexplorer.sif
 set -eu
 
-OUT="${1:-omicexplorer.sif}"
-IMAGE="omicexplorer:latest"
+OUT="${1:-omicsexplorer.sif}"
+IMAGE="omicsexplorer:latest"
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "==> building the Docker image (${IMAGE})"

@@ -1,6 +1,6 @@
 # The bundle format
 
-`omicexplorer build` turns the `.h5ad` files into a folder of static files.
+`omicsexplorer build` turns the `.h5ad` files into a folder of static files.
 The frontend only ever reads these files, so the format is the contract
 between the Python side and the browser.
 
@@ -136,6 +136,6 @@ that a "tegument marker" is also strongly expressed in parenchyma.
 |---|---|
 | fewer features | the blob shrinks proportionally; use `--max-features` in `build_panel.py`-style pipelines or subset the h5ad before the build |
 | `layers:` in the manifest | the expression is taken from a layer (e.g. `log1p`) instead of `X` |
-| dropping a dataset | `omicexplorer build --only <id>` |
+| dropping a dataset | `omicsexplorer build --only <id>` |
 
 The expression blob dominates the size of a bundle; everything else is tiny.

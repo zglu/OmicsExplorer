@@ -72,7 +72,7 @@ def main(out_dir: str) -> int:
     )
     import subprocess
 
-    cli = str(ROOT / ".venv" / "bin" / "omicexplorer")
+    cli = str(ROOT / ".venv" / "bin" / "omicsexplorer")
     subprocess.run([cli, "build", "-p", str(manifest)], check=True, cwd=str(ROOT))
     # marker gene index (the app fetches data/markers.json on startup)
     subprocess.run([cli, "markers", "-p", str(manifest)], check=True, cwd=str(ROOT))

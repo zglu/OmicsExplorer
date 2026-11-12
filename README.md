@@ -12,9 +12,9 @@ The same bundle can be exported as a **static folder** and hosted anywhere
 static site with no build step.
 
 ```
-h5ad  ──▶  omicexplorer build  ──▶  data/  ──▶  omicexplorer serve  ──▶  browser
+h5ad  ──▶  omicsexplorer build  ──▶  data/  ──▶  omicsexplorer serve  ──▶  browser
                                                      │
-                                                     └──▶ omicexplorer export ──▶ dist/ (static)
+                                                     └──▶ omicsexplorer export ──▶ dist/ (static)
 ```
 
 ![The OmicsExplorer web UI](docs/screenshots/01_overview.png)
@@ -45,7 +45,7 @@ h5ad  ──▶  omicexplorer build  ──▶  data/  ──▶  omicexplorer s
 ## Screenshots
 
 All the pictures below were taken from the author's own (unpublished) dataset
-of the liver flukes, served with `omicexplorer serve`.
+of the liver flukes, served with `omicsexplorer serve`.
 
 ### The datasets
 
@@ -95,8 +95,8 @@ supported, where the data is stored and how to add or remove a dataset.
 
 ```bash
 git clone <this repo> OmicsExplorer && cd OmicsExplorer
-docker build -t omicexplorer .
-docker run --rm -p 8080:8080 -v "$PWD/my_project:/project" omicexplorer
+docker build -t omicsexplorer .
+docker run --rm -p 8080:8080 -v "$PWD/my_project:/project" omicsexplorer
 # -> http://127.0.0.1:8080
 ```
 
@@ -120,15 +120,15 @@ OE_PROJECT=~/my_project docker compose up --build
 Smaller image without R (`.h5ad` only):
 
 ```bash
-docker build --build-arg WITH_R=0 -t omicexplorer:slim .
+docker build --build-arg WITH_R=0 -t omicsexplorer:slim .
 ```
 
 ### Apptainer / Singularity (HPC, clusters, no Docker)
 
 ```bash
-docker build -t omicexplorer .                       # once, where Docker is available
-apptainer build omicexplorer.sif docker-daemon://omicexplorer:latest
-apptainer run --bind "$PWD/my_project:/project" omicexplorer.sif
+docker build -t omicsexplorer .                       # once, where Docker is available
+apptainer build omicsexplorer.sif docker-daemon://omicsexplorer:latest
+apptainer run --bind "$PWD/my_project:/project" omicsexplorer.sif
 # -> http://127.0.0.1:8080
 ```
 
@@ -159,33 +159,33 @@ python3 -m venv --system-site-packages .venv      # or: pip install -e .
 
 Requirements: Python ≥ 3.10 with `anndata`, `h5py`, `numpy`, `pandas`,
 `pyarrow`, `scipy`, `pyyaml`.  `fastapi` + `uvicorn` for the local server
-(`omicexplorer serve`).  Seurat `.rds` support additionally needs R with
+(`omicsexplorer serve`).  Seurat `.rds` support additionally needs R with
 `Seurat` + `SeuratObject` (`convert_rds.r`).
 
 ## Quick start
 
 ```bash
 # 1. describe your data
-omicexplorer init my_project        # writes my_project/project.yaml
+omicsexplorer init my_project        # writes my_project/project.yaml
 $EDITOR my_project/project.yaml
 
 # 2. convert the h5ad files into the web bundle
-omicexplorer build -p my_project/project.yaml
+omicsexplorer build -p my_project/project.yaml
 
 # 3. compute the marker genes (optional but nice)
-omicexplorer markers -p my_project/project.yaml
+omicsexplorer markers -p my_project/project.yaml
 
 # 4. serve it
-omicexplorer serve -p my_project/project.yaml
+omicsexplorer serve -p my_project/project.yaml
 # -> http://127.0.0.1:8080
 ```
 
 The smallest project is a single file:
 
 ```bash
-omicexplorer init my_project        # writes my_project/project.yaml
+omicsexplorer init my_project        # writes my_project/project.yaml
 # point it at your .h5ad, or just use the web UI (+ Data)
-omicexplorer serve -p my_project/project.yaml
+omicsexplorer serve -p my_project/project.yaml
 ```
 
 The screenshots below come from the author's own dataset (Stereo-seq and
@@ -281,7 +281,7 @@ scale bar, tiles instead of dots).  Any 2-D `obsm` entry can be used.
 The frontend is a static site - there is no backend in production.
 
 ```bash
-omicexplorer export -p my_project/project.yaml -o dist
+omicsexplorer export -p my_project/project.yaml -o dist
 ```
 
 `dist/` contains `index.html`, `src/`, `vendor/` and `data/` and can be hosted
@@ -289,7 +289,7 @@ by any static server **that supports HTTP range requests** (the expression blob
 is read gene by gene with a range request):
 
 ```bash
-omicexplorer serve-static -d dist 8080   # the bundled server, range enabled
+omicsexplorer serve-static -d dist 8080   # the bundled server, range enabled
 ```
 
 > `python3 -m http.server` does **not** support range requests, so the gene
@@ -314,14 +314,14 @@ web/                     the frontend - plain ES modules, no build step
     core/                data layer, palette, gene search, composition maths
     views/               scatter (WebGL2), charts (heat map, dot plot, violins)
     app.js               the panels: datasets, compare, explorer, markers, genes
-omicexplorer/            the Python package
+omicsexplorer/            the Python package
   config.py              project.yaml
   h5ad_io.py             low level h5ad readers (gene-major matrix)
   blob.py                the X.bin codec
   converter.py           h5ad -> bundle
   markers.py             Seurat-style marker statistics
   server.py              FastAPI app (static + range + JSON API)
-  cli.py                 omicexplorer init | build | markers | serve | export
+  cli.py                 omicsexplorer init | build | markers | serve | export
 ```
 
 The important design decision: **the local server and the deployed site read

@@ -1,5 +1,5 @@
 {
-  "name": "omicexplorer",
+  "name": "omicsexplorer",
   "version": "0.1.0",
   "private": true,
   "description": "Local single-cell / spatial-omics visualisation platform",
@@ -7,7 +7,7 @@
   "scripts": {
     "test": "node tests/e2e.mjs",
     "smoke": "node tests/smoke.mjs",
-    "serve": "python3 -m omicexplorer.cli serve -p my_project/project.yaml",
+    "serve": "python3 -m omicsexplorer.cli serve -p my_project/project.yaml",
     "local": "node tests/e2e_local.mjs"
   },
   "devDependencies": {

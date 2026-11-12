@@ -76,7 +76,7 @@ console.log('\n# the browser only mode');
 await page.goto(URL_, { waitUntil: 'networkidle2', timeout: 60000 });
 await wait(2500);
 let s = await page.evaluate(() => ({
-  local: window.__OMICEXPLORER_LOCAL__ === true,
+  local: window.__OMICSEXPLORER_LOCAL__ === true,
   tabs: document.querySelectorAll('#dataset-tabs .tab').length,
 }));
 check('the app runs without a server', s.local === true, JSON.stringify(s));

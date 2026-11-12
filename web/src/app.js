@@ -566,7 +566,7 @@ function buildCard(ds) {
   applyEmbedding(card, ds);
   applyGroup(card, ds);
   app.cards.set(ds.id, card);
-  addExportButtons(card, `omicexplorer_${ds.id}`);
+  addExportButtons(card, `omicsexplorer_${ds.id}`);
   return card;
 }
 
@@ -743,7 +743,7 @@ function initHelp() {
   const body = document.getElementById('help-body');
   if (!btn || !dialog || !body) return;
 
-  const local = window.__OMICEXPLORER_LOCAL__ === true;
+  const local = window.__OMICSEXPLORER_LOCAL__ === true;
   body.innerHTML = local
     ? `<p>This is the <b>browser version</b>: everything happens on your own
          computer, no file is ever uploaded to a server.</p>

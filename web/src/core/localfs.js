@@ -4,7 +4,7 @@
 // Everything is stored under its path inside the project ("data/..."), which
 // makes the local project a mirror of the server bundle.
 
-const DB_NAME = 'omicexplorer';
+const DB_NAME = 'omicsexplorer';
 const DB_VERSION = 1;
 const STORE = 'files';
 

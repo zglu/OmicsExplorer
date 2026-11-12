@@ -328,7 +328,7 @@ export async function loadGeneExpr(ds, geneId) {
     const url = `${ds.dir}/X.bin`;
     const range = `bytes=${offset}-${offset + length - 1}`;
     let raw = await fetchRange(url, range);
-    // every gene block stored in X.bin is gzipped (see omicexplorer/blob.py)
+    // every gene block stored in X.bin is gzipped (see omicsexplorer/blob.py)
     if (raw[0] === 0x1f && raw[1] === 0x8b) raw = await gunzip(raw);
     const { cells, hi, lo } = decodeGeneBlock(raw, nEntries);
     const scale = ds.xIndex.scale;

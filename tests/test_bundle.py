@@ -15,10 +15,10 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from omicexplorer import blob  # noqa: E402
-from omicexplorer.config import ConfigError, load_project  # noqa: E402
-from omicexplorer.converter import natural_key  # noqa: E402
-from omicexplorer.h5ad_io import SparseMatrix  # noqa: E402
+from omicsexplorer import blob  # noqa: E402
+from omicsexplorer.config import ConfigError, load_project  # noqa: E402
+from omicsexplorer.converter import natural_key  # noqa: E402
+from omicsexplorer.h5ad_io import SparseMatrix  # noqa: E402
 
 
 # --------------------------------------------------------------------------
@@ -208,7 +208,7 @@ def test_natural_key():
 
 
 def test_grid_info_distinguishes_bins_from_cells():
-    from omicexplorer.converter import _grid_info
+    from omicsexplorer.converter import _grid_info
 
     # a 50 um bin grid: one cell per position
     xs, ys = np.meshgrid(np.arange(10) * 50, np.arange(8) * 50)
@@ -225,7 +225,7 @@ def test_grid_info_distinguishes_bins_from_cells():
 
 def test_cli_help():
     out = subprocess.run(
-        [sys.executable, "-m", "omicexplorer.cli", "--help"],
+        [sys.executable, "-m", "omicsexplorer.cli", "--help"],
         capture_output=True,
         text=True,
         cwd=ROOT,

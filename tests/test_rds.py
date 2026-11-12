@@ -13,9 +13,9 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from omicexplorer import add  # noqa: E402
-from omicexplorer.config import load_project  # noqa: E402
-from omicexplorer.rds_io import ensure_h5ad, is_rds  # noqa: E402
+from omicsexplorer import add  # noqa: E402
+from omicsexplorer.config import load_project  # noqa: E402
+from omicsexplorer.rds_io import ensure_h5ad, is_rds  # noqa: E402
 
 RSCRIPT = shutil.which("Rscript")
 

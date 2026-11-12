@@ -83,7 +83,7 @@ function showPane(name) {
 
 async function openDialog() {
   if (!(await stateHasProject())) {
-    toast('This build cannot add datasets - serve the project with `omicexplorer serve`.');
+    toast('This build cannot add datasets - serve the project with `omicsexplorer serve`.');
     return;
   }
   document.getElementById('add-dialog').style.display = 'flex';

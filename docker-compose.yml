@@ -5,13 +5,13 @@
 # The project directory (the current one by default) holds project.yaml, the
 # built bundle in data/, uploaded files in uploads/ and their cache.
 services:
-  omicexplorer:
+  omicsexplorer:
     build:
       context: .
       args:
         WITH_R: "1"          # set to 0 for a smaller image without Seurat
-    image: omicexplorer:latest
-    container_name: omicexplorer
+    image: omicsexplorer:latest
+    container_name: omicsexplorer
     ports:
       - "8080:8080"
     volumes:
@@ -19,7 +19,7 @@ services:
     # run as your own user so the files in the project stay yours
     user: "${OE_UID:-1000}:${OE_GID:-1000}"
     environment:
-      OMICEXPLORER_HOME: /project
+      OMICSEXPLORER_HOME: /project
       HOME: /tmp
     # "unless-stopped" restarts the container after a reboot (it then keeps
     # port 8080 busy) - opt in if that is what you want

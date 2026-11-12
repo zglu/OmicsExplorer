@@ -53,7 +53,7 @@ let server = null;
 let URL_ = process.argv[2] || '';
 if (!URL_) {  const py = process.env.OE_PY || `${ROOT}/.venv/bin/python3`;
   URL_ = 'http://127.0.0.1:8097/';
-  server = spawn(py, ['-m', 'omicexplorer.cli', 'serve', '-p', `${FIXTURE}/project.yaml`, '--no-build', '--port', '8097'], {
+  server = spawn(py, ['-m', 'omicsexplorer.cli', 'serve', '-p', `${FIXTURE}/project.yaml`, '--no-build', '--port', '8097'], {
     cwd: ROOT,
     stdio: ['ignore', 'pipe', 'pipe'],
   });

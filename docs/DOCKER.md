@@ -7,10 +7,10 @@ installed on the host - the data never leaves the machine.
 
 ```bash
 git clone <this repo> OmicsExplorer && cd OmicsExplorer
-docker build -t omicexplorer .
+docker build -t omicsexplorer .
 
 # an empty project directory is enough - everything else is created for you
-mkdir -p ~/omics && docker run --rm -p 8080:8080 -v ~/omics:/project omicexplorer
+mkdir -p ~/omics && docker run --rm -p 8080:8080 -v ~/omics:/project omicsexplorer
 # -> http://127.0.0.1:8080
 ```
 
@@ -49,7 +49,7 @@ the files stay yours:
 ```bash
 docker run --rm -p 8080:8080 \
   --user "$(id -u):$(id -g)" -e HOME=/tmp \
-  -v ~/omics:/project omicexplorer
+  -v ~/omics:/project omicsexplorer
 ```
 
 `docker compose` does that for you:
@@ -63,7 +63,7 @@ OE_PROJECT=~/omics docker compose up --build
 ```bash
 docker build --build-arg WITH_R=0 \
   --build-arg BASE_IMAGE=python:3.12-slim-bookworm \
-  --build-arg PY_PKGS= -t omicexplorer:slim .
+  --build-arg PY_PKGS= -t omicsexplorer:slim .
 ```
 
 1.1 GB instead of 2.8 GB - but Seurat `.rds` files are then not supported.
@@ -71,8 +71,8 @@ docker build --build-arg WITH_R=0 \
 ## Apptainer / Singularity (HPC)
 
 ```bash
-./docker/apptainer-build.sh omicexplorer.sif      # docker build + apptainer build
-apptainer run --bind "$PWD/omics:/project" omicexplorer.sif
+./docker/apptainer-build.sh omicsexplorer.sif      # docker build + apptainer build
+apptainer run --bind "$PWD/omics:/project" omicsexplorer.sif
 ```
 
 The container only writes inside the bound directory, so it also works on a
@@ -82,13 +82,13 @@ read-only cluster filesystem.
 
 ```bash
 # rebuild the bundle after editing project.yaml
-docker exec -it omicexplorer omicexplorer-entrypoint build -p /project/project.yaml
+docker exec -it omicsexplorer omicsexplorer-entrypoint build -p /project/project.yaml
 
 # compute the marker genes (the "Marker genes" panel)
-docker exec -it omicexplorer omicexplorer-entrypoint markers -p /project/project.yaml
+docker exec -it omicsexplorer omicsexplorer-entrypoint markers -p /project/project.yaml
 
 # export a static site (no server needed, range requests required)
-docker exec -it omicexplorer omicexplorer-entrypoint export -p /project/project.yaml -o /project/site
+docker exec -it omicsexplorer omicsexplorer-entrypoint export -p /project/project.yaml -o /project/site
 ```
 
 ## Troubleshooting

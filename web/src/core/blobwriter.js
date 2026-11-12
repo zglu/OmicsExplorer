@@ -1,6 +1,6 @@
 // Write the expression blob (X.bin + X.index.json) in the browser.
 //
-// The format is the one the python side writes (see omicexplorer/blob.py):
+// The format is the one the python side writes (see omicsexplorer/blob.py):
 //
 //   X.index.json  {"n": cells, "scale": float,
 //                  "genes": {"<gene>": [offset, length, n_entries]}}

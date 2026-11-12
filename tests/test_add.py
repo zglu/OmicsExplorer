@@ -12,8 +12,8 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from omicexplorer import add  # noqa: E402
-from omicexplorer.config import load_project  # noqa: E402
+from omicsexplorer import add  # noqa: E402
+from omicsexplorer.config import load_project  # noqa: E402
 
 
 def write_test_h5ad(path, X, obs, obsm, index, var_index):

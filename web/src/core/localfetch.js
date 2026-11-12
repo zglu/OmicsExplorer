@@ -9,7 +9,7 @@ let installed = false;
 
 /** True when the app runs without a server (a static site). */
 export function isLocalMode() {
-  return window.__OMICEXPLORER_LOCAL__ === true;
+  return window.__OMICSEXPLORER_LOCAL__ === true;
 }
 
 /**
@@ -17,7 +17,7 @@ export function isLocalMode() {
  * local (browser only) mode is switched on.
  */
 export async function detectMode() {
-  if (window.__OMICEXPLORER_LOCAL__ === true) return 'local';
+  if (window.__OMICSEXPLORER_LOCAL__ === true) return 'local';
   let ok = false;
   try {
     const res = await fetch('/api/project', { method: 'GET' });
@@ -25,7 +25,7 @@ export async function detectMode() {
   } catch (err) {
     ok = false;
   }
-  window.__OMICEXPLORER_LOCAL__ = !ok;
+  window.__OMICSEXPLORER_LOCAL__ = !ok;
   if (!ok) installLocalFetch();
   return ok ? 'server' : 'local';
 }
