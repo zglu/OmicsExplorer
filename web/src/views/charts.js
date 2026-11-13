@@ -2,13 +2,8 @@
 // and expression violins.  They all follow the same conventions as the
 // reference atlas so the two apps look alike.
 
-import { canvasTheme, catColor, VIRIDIS, chipTextColor, rgba } from '../core/palette.js';
+import { canvasTheme, catColor, rampColor, VIRIDIS, chipTextColor, rgba } from '../core/palette.js';
 import { sizeCanvas } from '../core/util.js';
-
-function rampColor(ramp, t) {
-  const idx = Math.max(0, Math.min(ramp.length - 1, Math.round(t * (ramp.length - 1))));
-  return ramp[idx];
-}
 
 /** Donut chart of the category counts. */
 export function drawDonut(canvas, cats, counts, total) {
@@ -395,6 +390,9 @@ export function drawDotplot(canvas, genes, cats, sheet, options = {}) {
   ctx.clearRect(0, 0, width, height);
 
   const maxMean = options.maxMean || 1;
+  // the dots follow the expression colour scheme the user picked for the
+  // scatter plots (the same ramp the UMAP / spatial view colours with)
+  const ramp = options.scheme || VIRIDIS;
   genes.forEach((gene, g) => {
     cats.forEach((cat, c) => {
       const base = (g * cats.length + c) * 2;
@@ -405,7 +403,7 @@ export function drawDotplot(canvas, genes, cats, sheet, options = {}) {
       const r = 1.3 + 5.2 * pct;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fillStyle = rampColor(VIRIDIS, Math.max(0, Math.min(1, mean / maxMean)));
+      ctx.fillStyle = rampColor(ramp, Math.max(0, Math.min(1, mean / maxMean)));
       ctx.fill();
       if (options.rings && options.rings.has(gene)) {
         ctx.lineWidth = 1.6;

@@ -95,10 +95,13 @@ supported, where the data is stored and how to add or remove a dataset.
 
 ```bash
 git clone <this repo> OmicsExplorer && cd OmicsExplorer
-docker build -t omicsexplorer .
+./docker/build.sh                     # or: docker build -t omicsexplorer .
 docker run --rm -p 8080:8080 -v "$PWD/my_project:/project" omicsexplorer
 # -> http://127.0.0.1:8080
 ```
+
+The build script also removes the image of the previous build (it would stay
+behind as a tag-less `<none>` entry otherwise).
 
 The image contains R + Seurat, so Seurat `.rds` files can be uploaded through
 the web UI.  The mounted directory holds everything:

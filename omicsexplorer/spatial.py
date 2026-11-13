@@ -184,7 +184,9 @@ def analyse_spatial(
         # the coordinates are hires pixels: the image needs no scaling
         um_per_data = (visium_pitch_um / pitch) if (pitch > 0 and visium_pitch_um > 0) else 1.0
         size_um = spot_fullres * hires_scalef * um_per_data if spot_fullres else 0.0
-        image_scale = 1.0
+        # the coordinates are converted to microns - the image transform has
+        # to be hires pixels per micron (not per hires pixel)
+        image_scale = (pitch / visium_pitch_um) if (pitch > 0 and visium_pitch_um > 0) else 0.0
     else:
         # full resolution pixels: the Visium grid has a pitch of 100 um
         um_per_data = (visium_pitch_um / pitch) if (pitch > 0 and visium_pitch_um > 0) else 1.0

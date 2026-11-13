@@ -257,6 +257,18 @@ def create_app(data_dir: Path, web_dir: Path | None = None, *, project: Any = No
         # uses FileResponse underneath, so it also honours range requests.
         app.mount("/", StaticFiles(directory=web_dir, html=True), name="web")
 
+        # the es modules must never be served stale without a revalidation:
+        # a browser that caches an old module while the app imports a new
+        # export from it breaks with a console error and a blank page - the
+        # small json indexes of the bundle are revalidated as well
+        @app.middleware("http")
+        async def no_stale_modules(request, call_next):
+            response = await call_next(request)
+            path = request.url.path
+            if path.endswith(".js") or path.endswith(".html") or path.endswith(".json"):
+                response.headers["cache-control"] = "no-cache"
+            return response
+
     return app
 
 

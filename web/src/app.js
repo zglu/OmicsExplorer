@@ -15,6 +15,7 @@ import {
   groupColorFor,
   registerGroupColors,
   canvasTheme,
+  rampColor,
   SCHEMES,
 } from './core/palette.js';
 import {
@@ -269,6 +270,7 @@ function renderToolbar() {
     app.exprScheme = schemeSel.value;
     updateCardsForGene();
     applyColourBy();
+    renderMarkers(); // the marker dotplot follows the colour scheme too
   });
   schemeWrap.appendChild(schemeSel);
   bar.appendChild(schemeWrap);
@@ -1095,18 +1097,25 @@ async function runGeneQuery(raw) {
     .map((t) => t.trim())
     .filter(Boolean);
   const next = [...app.geneQuery];
+  const added = [];
   let unknown = [];
   for (const token of tokens) {
     const gene = resolveGene(token);
     if (gene) {
-      if (!next.includes(gene) && next.length < 8) next.push(gene);
+      if (!next.includes(gene) && next.length < 8) {
+        next.push(gene);
+        added.push(gene);
+      }
       continue;
     }
     // a prefix that matches several genes adds them all ('CSKR_', 'Smp-')
     const prefix = prefixGenes(token, 8 - Math.max(0, tokens.length - 1));
     if (prefix.length) {
       for (const g of prefix) {
-        if (!next.includes(g) && next.length < 8) next.push(g);
+        if (!next.includes(g) && next.length < 8) {
+          next.push(g);
+          added.push(g);
+        }
       }
     } else {
       unknown.push(token);
@@ -1114,7 +1123,8 @@ async function runGeneQuery(raw) {
   }
   if (unknown.length) toast(`Unknown gene: ${unknown.join(', ')}`);
   if (next.length === app.geneQuery.length) return;
-  setGeneQuery(next, { jump: true });
+  // the gene the user just asked for is shown on the cards right away
+  setGeneQuery(next, { jump: true, active: added[added.length - 1] || undefined });
   $('#gene-input').value = '';
 }
 
@@ -1174,7 +1184,9 @@ async function applyCardGene(card, ds) {
 }
 
 export function setGeneQuery(genes, opts = {}) {
-  if (!genes.includes(app.activeGene)) app.activeGene = genes[0] || null;
+  // the gene the user asked for is the one the cards colour by
+  if (opts.active && genes.includes(opts.active)) app.activeGene = opts.active;
+  else if (!genes.includes(app.activeGene)) app.activeGene = genes[0] || null;
   app.geneQuery = genes;
   const clear = $('#gene-clear');
   if (clear) clear.style.display = genes.length ? '' : 'none';
@@ -1265,7 +1277,7 @@ function showSuggestions(query, box) {
     item.addEventListener('click', () => {
       $('#gene-input').value = '';
       box.style.display = 'none';
-      setGeneQuery([...app.geneQuery, gene].slice(0, 8), { jump: true });
+      setGeneQuery([...app.geneQuery, gene].slice(0, 8), { jump: true, active: gene });
     });
     box.appendChild(item);
   });
@@ -1418,6 +1430,9 @@ function renderGeneDotplot(card, host) {
     if (!absMax) absMax = 1;
     if (!pctMax) pctMax = 1;
     const perGene = app.dotNormalise === 'gene';
+    // the dots use the same expression colour scheme as the scatter plots
+    // (the Colours select in the toolbar)
+    const ramp = SCHEMES[app.exprScheme] || SCHEMES.viridis;
 
     const grid = el('div', 'gp');
     const head = el('div', 'gp-row gp-head');
@@ -1454,7 +1469,7 @@ function renderGeneDotplot(card, host) {
           const dot = el('span', 'gp-dot');
           dot.style.width = `${size}px`;
           dot.style.height = `${size}px`;
-          dot.style.background = `hsl(212, 62%, ${Math.round(86 - 60 * tMean)}%)`;
+          dot.style.background = rampColor(ramp, tMean);
           cell.appendChild(dot);
         }
         cell.dataset.gene = s.gene;
@@ -1975,6 +1990,7 @@ async function renderMarkers() {
     cellW,
     cellH,
     maxMean: maxMeanOf(sheet),
+    scheme: SCHEMES[app.exprScheme] || SCHEMES.viridis,
     rings: new Set(columns.filter((c) => isTopMarker(markers[c.cat], c.gene)).map((c) => c.gene)),
   });
   drawDotplotLabels(labelCanvas, cats, columns, ownRange, cellH);

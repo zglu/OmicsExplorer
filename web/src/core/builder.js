@@ -7,7 +7,7 @@
 // The obs/obsm columns are stored as small binary files (.bin) instead of
 // parquet - the local reader knows the difference.
 
-import { readH5ad } from './h5ad.js';
+import { loadH5, readH5ad } from './h5ad.js';
 import { buildExpressionBlob } from './blobwriter.js';
 import { getJSON, putFile, putJSON } from './localfs.js';
 
@@ -328,16 +328,13 @@ export async function buildDatasetFromH5ad(file, opts = {}) {
     }
   }
 
-  // --- obsm ------------------------------------------------------------
-  for (const [name, arr] of Object.entries(h5ad.obsm)) {
-    if (!content.embeddings.includes(name)) continue;
-    await putFile(`${dir}/obsm/${name}.bin`, Float32Array.from(arr.values).buffer);
-  }
-
   // --- the geometry of the spatial embedding (microns) -------------------
   const grids = {};
   if (spatialMeta && h5ad.obsm) {
     for (const [name, arr] of Object.entries(h5ad.obsm)) {
+      // only the spatial embedding is in image pixels - the others (pca, ...)
+      // must never be scaled to microns
+      if (name !== 'spatial') continue;
       const info = analyseSpatial(arr.values, spatialMeta.scalefactors, spatialMeta.hiresShape, spatialMeta.fullresShape);
       if (!info.pitch) continue;
       // the coordinates are converted to microns
@@ -356,6 +353,15 @@ export async function buildDatasetFromH5ad(file, opts = {}) {
       }
       grids[name] = gridEntry;
     }
+  }
+
+  // --- obsm ------------------------------------------------------------
+  // written *after* the geometry block above: it converts the spatial
+  // coordinates to microns so that the scale bar, the spot size and a
+  // potential image transform match the stored coordinates
+  for (const [name, arr] of Object.entries(h5ad.obsm)) {
+    if (!content.embeddings.includes(name)) continue;
+    await putFile(`${dir}/obsm/${name}.bin`, Float32Array.from(arr.values).buffer);
   }
 
   // --- index.json ------------------------------------------------------

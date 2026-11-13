@@ -14,7 +14,7 @@ IMAGE="omicsexplorer:latest"
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "==> building the Docker image (${IMAGE})"
-docker build -t "$IMAGE" "$HERE"
+"${HERE}/docker/build.sh"
 
 APPTAINER="$(command -v apptainer || command -v singularity || true)"
 if [ -z "$APPTAINER" ]; then

@@ -135,19 +135,37 @@ export async function readH5ad(file) {
     // --- var (gene names) ---------------------------------------------
     const varGroup = root.get('var');
     let genes = [];
-    if (varGroup) {
+    // gene *symbols* win over the index (which is often an Ensembl id) -
+    // the same preference the python build applies (h5ad_io.feature_names)
+    const readStringColumn = (node) => {
+      if (!node) return null;
+      if (node instanceof lib.Group) {
+        // a categorical column (categories + codes) - expand in code order
+        if (node.get('categories') && node.get('codes')) return readCategorical(node);
+        return null;
+      }
+      const values = valuesOf(node);
+      if (!values || !values.length) return null;
+      return Array.from(values).map((x) => String(x));
+    };
+    const usable = (names) => !!names && names.length > 0 && names.every((n) => n && n !== 'nan');
+    for (const key of ['real_gene_name', 'gene_name', 'gene_symbol', 'symbol', 'feature_name']) {
+      const names = readStringColumn(varGroup && varGroup.get(key));
+      if (usable(names)) {
+        genes = names;
+        break;
+      }
+    }
+    if (!genes.length) {
       const idx = readIndex(varGroup);
-      if (idx && idx.length) {
-        genes = idx;
-      } else {
-        // not every h5ad has a var/_index (cellxgene style files keep the
-        // gene ids in gene_ids / feature_name)
-        for (const key of ['gene_ids', 'feature_name', 'gene_name', 'gene_symbols', 'symbol', 'id']) {
-          const node = varGroup.get(key);
-          if (!node || node.get) continue; // a group (categorical) is no use here
-          const values = valuesOf(node);
-          if (!values || !values.length) continue;
-          genes = Array.from(values).map((x) => String(x));
+      if (idx && idx.length) genes = idx;
+    }
+    // files whose symbols are all missing fall back to the ids
+    if (!genes.length) {
+      for (const key of ['gene_ids', 'gene_symbols', 'id']) {
+        const names = readStringColumn(varGroup && varGroup.get(key));
+        if (usable(names)) {
+          genes = names;
           break;
         }
       }

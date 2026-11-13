@@ -14,6 +14,19 @@ mkdir -p ~/omics && docker run --rm -p 8080:8080 -v ~/omics:/project omicsexplor
 # -> http://127.0.0.1:8080
 ```
 
+**Tip:** every rebuild with the same tag takes the tag away from the previous
+image, which is left behind as a `<none>` entry (several GB).  The helper
+script builds and removes exactly that old image again:
+
+```bash
+./docker/build.sh                     # == docker build -t omicsexplorer .
+./docker/build.sh omicsexplorer:slim --build-arg WITH_R=0 \
+    --build-arg BASE_IMAGE=python:3.12-slim-bookworm
+```
+
+Already have dangling images?  `docker image prune -f` removes all of them
+(only images without a tag and not used by any container).
+
 Open the URL, press **+ Data**, and drop in an `.h5ad` or a Seurat `.rds`
 file.  The upload, the conversion and the cache all happen inside the
 container, in the mounted directory:

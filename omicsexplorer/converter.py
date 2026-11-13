@@ -386,13 +386,6 @@ def build_dataset(
         _write_parquet(ds_dir / "obs" / f"{g.name}.parquet", {"value": values})
     _write_parquet(ds_dir / "obs" / "index.parquet", {"value": cells.astype(str) if len(cells) else np.array([], dtype=str)})
 
-    # ---- obsm parquet ---------------------------------------------------
-    for name, arr in emb_arrays.items():
-        _write_parquet(
-            ds_dir / "obsm" / f"{name}.parquet",
-            {f"{name}_1": arr[:, 0].astype(np.float32), f"{name}_2": arr[:, 1].astype(np.float32)},
-        )
-
     # ---- images ---------------------------------------------------------
     images = []
     for img in ds.images:
@@ -476,9 +469,19 @@ def build_dataset(
                 images[-1]["transform"] = tr
                 grids[e.name]["image_transform"] = tr
                 log(
-                    f"[{ds.id}] spatial grid: pitch {info['pitch']:.1f} um, spot {size:.1f} um "
+                    f"[{ds.id}] spatial grid: pitch {info['pitch'] * um_per_data:.1f} um, spot {size:.1f} um "
                     f"({info['space']}), image transform {tr}"
                 )
+
+    # ---- obsm parquet ---------------------------------------------------
+    # written *after* the spatial block above: it may convert the spatial
+    # coordinates to microns (pixel pitch -> um) so that the scale bar, the
+    # spot size and the image transform all match the stored coordinates
+    for name, arr in emb_arrays.items():
+        _write_parquet(
+            ds_dir / "obsm" / f"{name}.parquet",
+            {f"{name}_1": arr[:, 0].astype(np.float32), f"{name}_2": arr[:, 1].astype(np.float32)},
+        )
 
     # ---- index.json -----------------------------------------------------
     samples: list[dict[str, Any]] = []

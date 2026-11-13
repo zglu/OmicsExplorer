@@ -26,7 +26,7 @@ NODE = shutil.which("node")
 pytestmark = pytest.mark.skipif(not NODE, reason="node is not available")
 
 
-def write_h5ad(path: Path, dense: np.ndarray, obsm: dict[str, np.ndarray]) -> None:
+def write_h5ad(path: Path, dense: np.ndarray, obsm: dict[str, np.ndarray], var_columns: dict[str, list[str]] | None = None) -> None:
     csc = sp.csc_matrix(dense)
     strings = h5py.string_dtype(encoding="utf-8")
     with h5py.File(path, "w") as fh:
@@ -41,6 +41,8 @@ def write_h5ad(path: Path, dense: np.ndarray, obsm: dict[str, np.ndarray]) -> No
         obs.create_dataset("_index", data=["c%d" % i for i in range(dense.shape[0])], dtype=strings)
         var = fh.create_group("var")
         var.create_dataset("_index", data=["g%d" % i for i in range(dense.shape[1])], dtype=strings)
+        for key, values in (var_columns or {}).items():
+            var.create_dataset(key, data=values, dtype=strings)
         emb = fh.create_group("obsm")
         for name, arr in obsm.items():
             emb.create_dataset(name, data=arr)
@@ -93,3 +95,42 @@ def test_readh5ad_keeps_the_full_2d_obsm_arrays(tmp_path):
     assert result["obsm"]["X_umap"]["values"] == n_cells * 2
     assert result["obsm"]["X_pca"]["values"] == n_cells * 7
     assert result["X"]["data"] == int((dense != 0).sum())
+
+
+def test_readh5ad_prefers_gene_symbols_over_the_index(tmp_path):
+    """The browser build queried genes by their Ensembl id.
+
+    The bug: the reader took ``var/_index`` first, but cellxgene style files
+    keep the gene ids there and the symbols in ``feature_name`` - the python
+    build searched by symbol, the browser build only by Ensembl id.
+    """
+    n_cells, n_genes = 10, 4
+    dense = np.zeros((n_cells, n_genes), dtype=np.float32)
+    dense[0, 0] = 1.0
+    path = tmp_path / "symbols.h5ad"
+    write_h5ad(
+        path,
+        dense,
+        {},
+        var_columns={
+            "gene_ids": ["ENSG0000011", "ENSG0000012", "ENSG0000013", "ENSG0000014"],
+            "feature_name": ["ACTB", "MYH6", "TNNT2", "GATA4"],
+        },
+    )
+
+    script = SCRIPT % (ROOT, path)
+    out = subprocess.run([NODE, "--input-type=module", "-e", script], capture_output=True, text=True)
+    if out.returncode != 0:
+        raise AssertionError(f"the node script failed: {out.stderr[-800:]}")
+    import json
+
+    result = json.loads(out.stdout.strip().splitlines()[-1])
+    assert result["nGenes"] == n_genes
+    # the reader reports the genes as plain strings - check them via a symbol
+    script2 = (
+        SCRIPT % (ROOT, path)
+        + "\nconsole.log(JSON.stringify(h5ad.genes));"
+    )
+    out2 = subprocess.run([NODE, "--input-type=module", "-e", script2], capture_output=True, text=True)
+    genes = json.loads(out2.stdout.strip().splitlines()[-1])
+    assert genes == ["ACTB", "MYH6", "TNNT2", "GATA4"]

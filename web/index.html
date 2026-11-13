@@ -11,24 +11,26 @@
 <body>
 
 <header class="topbar">
-  <div id="brand" class="brand"></div>
+  <div class="topbar-row">
+    <div id="brand" class="brand"></div>
+
+    <div class="topbar-right">
+      <div id="gene-search" class="gene-search">
+        <input id="gene-input" type="search" placeholder="Search a gene…" autocomplete="off" spellcheck="false">
+        <button id="gene-clear" class="icon-btn gene-clear" type="button" title="Clear the gene query" style="display:none">×</button>
+        <button id="gene-go" class="btn" type="button">Go</button>
+        <div id="gene-suggest" class="suggest"></div>
+      </div>
+      <button id="add-data" class="btn" type="button" title="Open another h5ad dataset">＋ Data</button>
+      <button id="help-toggle" class="icon-btn" type="button" title="How to use OmicsExplorer">?</button>
+      <button id="theme-toggle" class="icon-btn" type="button" title="Toggle theme">◐</button>
+    </div>
+  </div>
 
   <nav id="dataset-tabs" class="dataset-tabs"></nav>
 
-  <div class="topbar-right">
-    <div id="gene-search" class="gene-search">
-      <input id="gene-input" type="search" placeholder="Search a gene…" autocomplete="off" spellcheck="false">
-      <button id="gene-clear" class="icon-btn gene-clear" type="button" title="Clear the gene query" style="display:none">×</button>
-      <button id="gene-go" class="btn" type="button">Go</button>
-      <div id="gene-suggest" class="suggest"></div>
-    </div>
-    <button id="add-data" class="btn" type="button" title="Open another h5ad dataset">＋ Data</button>
-    <button id="help-toggle" class="icon-btn" type="button" title="How to use OmicsExplorer">?</button>
-    <button id="theme-toggle" class="icon-btn" type="button" title="Toggle theme">◐</button>
-  </div>
+  <div id="gene-chips" class="gene-chips"></div>
 </header>
-
-<div id="gene-chips" class="gene-chips"></div>
 
 <main class="main">
   <div id="toolbar" class="toolbar"></div>

@@ -263,6 +263,13 @@ export const SCHEMES = {
   cividis: ['#00204c','#00336f','#39486b','#575d6d','#707173','#8a8678','#a59c74','#c3b369','#e1cc55','#fee838'],
 };
 
+/** The colour of a sequential ramp at t in [0, 1] (the dots of the gene
+ *  dotplots and the expression colouring of the cells use the same ramps). */
+export function rampColor(ramp, t) {
+  const idx = Math.max(0, Math.min(ramp.length - 1, Math.round(t * (ramp.length - 1))));
+  return ramp[idx];
+}
+
 export function schemeColors(name) {
   const ramp = SCHEMES[name] || VIRIDIS;
   const n = ramp.length;

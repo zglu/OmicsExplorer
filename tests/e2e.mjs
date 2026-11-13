@@ -360,6 +360,11 @@ await page.type('#gene-input', ' ');
 await wait(200);
 await page.click('#gene-go');
 await wait(1200);
+// a newly queried gene is displayed on the cards right away - no click needed
+gene = await page.evaluate(() => ({
+  active: document.querySelector('#gene-chips .chip.gene-chip.active .chip-name')?.textContent || '',
+}));
+check('a newly queried gene becomes active by itself', gene.active === 'CSKR_100004', JSON.stringify(gene));
 await page.evaluate(() => {
   const second = Array.from(document.querySelectorAll('#gene-chips .chip.gene-chip'))[1];
   second.click();
