@@ -157,6 +157,12 @@ async function uploadFile(file) {
     });
     if (!res.ok) throw new Error(await res.text());
     const stored = await res.json();
+    if (stored.duplicate) {
+      const dup = stored.duplicate;
+      info.innerHTML =
+        `<p class="muted small">This file is already in the project as <b>${esc(dup.name)}</b>` +
+        (dup.removed ? ' (it was deleted - it will be restored).' : '.') + '</p>';
+    }
     discover(stored.path);
   } catch (err) {
     info.innerHTML = `<p class="muted small">Upload failed: ${esc(String(err.message || err))}</p>`;
@@ -381,9 +387,16 @@ async function runAdd(params) {
       if (job.status === 'done') {
         clearInterval(dialog.poll);
         dialog.poll = null;
-        if (dialog.onAdded && job.dataset) dialog.onAdded(job.dataset.id);
+        if (dialog.onAdded && job.dataset && !job.dataset.duplicate) dialog.onAdded(job.dataset.id);
         closeDialog();
-        toast(`${job.dataset.name || job.dataset.id} added · ${fmtNum(job.dataset.n_cells)} cells`);
+        const ds = job.dataset || {};
+        if (ds.duplicate) {
+          toast(`${ds.name || ds.id} is already in the project - nothing added`);
+        } else if (ds.restored) {
+          toast(`${ds.name || ds.id} restored · ${fmtNum(ds.n_cells)} cells`);
+        } else {
+          toast(`${ds.name || ds.id} added · ${fmtNum(ds.n_cells)} cells`);
+        }
       } else if (job.status === 'error') {
         clearInterval(dialog.poll);
         dialog.poll = null;

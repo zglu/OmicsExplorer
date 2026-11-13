@@ -122,6 +122,7 @@ class DatasetSpec:
     max_cells: int | None = None
     markers: dict[str, Any] = field(default_factory=dict)
     gene_details: Path | None = None
+    checksum: str | None = None
 
     @property
     def display(self) -> str:
@@ -441,7 +442,7 @@ def _read_removed(root: Path) -> set[str]:
     try:
         with auto.open("r", encoding="utf-8") as fh:
             raw = yaml.safe_load(fh) or {}
-    except yaml.YAMError:
+    except yaml.YAMLError:
         return set()
     if not isinstance(raw, dict):
         return set()
@@ -463,6 +464,10 @@ def _merge_auto_manifest(project: Project, root: Path, data_root: Path | None, s
         return
     for item in entries:
         if not isinstance(item, dict):
+            continue
+        if item.get("removed"):
+            # deleted through the web UI - kept in the list only for its
+            # checksum (uploading the same file again restores it)
             continue
         ds_id = str(item.get("id") or "").strip()
         if not ds_id or ds_id in seen:
@@ -490,6 +495,7 @@ def _merge_auto_manifest(project: Project, root: Path, data_root: Path | None, s
                 default_embedding=item.get("default_embedding"),
                 units=item.get("units"),
                 bin_size=item.get("bin_size"),
+                checksum=str(item.get("checksum") or "") or None,
             )
         )
 

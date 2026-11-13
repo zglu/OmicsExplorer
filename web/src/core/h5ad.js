@@ -55,7 +55,9 @@ function readDataset(ds) {
   const value = valuesOf(ds);
   const shape = ds.shape || [];
   if (!value) return null; // a dtype the wasm build cannot read
-  const n = shape.length ? shape[0] : value.length;
+  // h5wasm returns the *flattened* array - taking shape[0] would cut a
+  // 2-D obsm entry (n, 2) down to its first n elements (half the points)
+  const n = value.length;
   const out = new Array(n);
   for (let i = 0; i < n; i++) out[i] = value[i];
   return { values: out, shape, dtype: ds.dtype };
@@ -160,7 +162,7 @@ export async function readH5ad(file) {
         const node = obsmGroup.get(key);
         if (node instanceof lib.Dataset) {
           const d = readDataset(node);
-          obsm[key] = { values: d.values, shape: d.shape };
+          if (d) obsm[key] = { values: d.values, shape: d.shape };
         }
       }
     }

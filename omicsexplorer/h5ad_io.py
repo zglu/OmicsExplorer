@@ -250,13 +250,23 @@ def _csr_to_gene_major(node: h5py.Dataset, shape: Any) -> SparseMatrix:
     indices = np.asarray(node["indices"][:], dtype=np.int32)
     data = np.asarray(node["data"][:], dtype=np.float32)
 
+    # the row (cell) index of every entry - the CSR indices are the *gene*
+    # columns, so the transpose has to compute the rows itself
+    rows = np.repeat(
+        np.arange(n_cells, dtype=np.int32),
+        np.diff(indptr).astype(np.int64),
+    )
+    if rows.size != indices.size:  # a corrupt indptr cannot be transposed
+        raise ValueError(f"{node.name}: indptr does not match the entry count")
+
+    # counting sort: group the entries by gene (column) index
     counts = np.bincount(indices.astype(np.int64), minlength=n_genes)
     out_indptr = np.zeros(n_genes + 1, dtype=np.int64)
     np.cumsum(counts, out=out_indptr[1:])
     order = np.argsort(indices, kind="stable")
     return SparseMatrix(
         indptr=out_indptr,
-        indices=indices[order],
+        indices=rows[order].astype(np.int32),
         data=data[order],
         n_genes=n_genes,
         n_cells=n_cells,

@@ -89,6 +89,25 @@ export function estimatePitch(xy) {
 }
 
 /**
+ * The geometry of a coordinate array: does the data sit on a regular grid
+ * (one cell per grid position -> drawn as tiles) or not (cells at arbitrary
+ * positions -> drawn as dots)?  Mirrors python's ``converter._grid_info``.
+ */
+export function gridInfoOf(xy) {
+  const n = xy.length / 2;
+  if (n < 2) return { is_grid: false };
+  const xs = new Set();
+  const ys = new Set();
+  for (let i = 0; i < n; i++) {
+    xs.add(xy[i * 2]);
+    ys.add(xy[i * 2 + 1]);
+  }
+  // a lattice has far fewer distinct x (and y) values than cells
+  const coarse = xs.size <= Math.max(2, n / 4) && ys.size <= Math.max(2, n / 4);
+  return { is_grid: coarse };
+}
+
+/**
  * The geometry of a spatial embedding: the grid pitch, the size of one spot
  * and how many microns one data unit is.  Everything is converted to microns.
  */
@@ -324,14 +343,18 @@ export async function buildDatasetFromH5ad(file, opts = {}) {
       // the coordinates are converted to microns
       const xy = arr.values;
       for (let i = 0; i < xy.length; i++) xy[i] *= info.umPerData;
-      grids[name] = {
-        is_grid: true,
+      const grid = gridInfoOf(xy);
+      const gridEntry = {
         pitch: info.pitch * info.umPerData,
+        is_grid: grid.is_grid,
         size: info.size,
         space: info.space,
-        // spots with a gap (Visium) are round, contiguous bins are square
-        shape: info.size && info.size < info.pitch * info.umPerData * 0.95 ? 'circle' : 'square',
       };
+      // spots with a gap (Visium) are round, contiguous bins are square
+      if (info.size) {
+        gridEntry.shape = info.size < info.pitch * info.umPerData * 0.95 ? 'circle' : 'square';
+      }
+      grids[name] = gridEntry;
     }
   }
 

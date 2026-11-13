@@ -191,7 +191,11 @@ function renderHeader() {
 /** Delete one dataset: drop it from the project and from the cards. */
 async function removeDataset(ds) {
   const name = ds.meta.name || ds.id;
-  if (!window.confirm(`Remove the dataset "${name}" from this project?\n\nThe built data is deleted; the source file stays where it is.`)) {
+  if (!window.confirm(
+    `Remove the dataset "${name}" from this project?\n\n` +
+    'The built data is deleted. If this dataset was uploaded, its copy in uploads/ is deleted too; ' +
+    'uploading the same file again will restore it.'
+  )) {
     return;
   }
   try {
@@ -797,12 +801,14 @@ function initHelp() {
          <li>Press <b>＋ Data</b>: upload a file or point to a path on the server.</li>
          <li>Pick the groupings and the embedding, then <b>Convert &amp; add</b>.</li>
        </ul>
-       <h4>How do I remove data?</h4>
-       <ul>
-         <li>Press the <b>×</b> next to the dataset in the bar at the top - the built
-             data is deleted and the dataset is hidden from the project.</li>
-         <li>The source file is kept; remove it by hand if you want to.</li>
-       </ul>
+  <h4>How do I remove data?</h4>
+  <ul>
+    <li>Press the <b>×</b> next to the dataset in the bar at the top - the built
+        data is deleted and the dataset is hidden from the project.</li>
+    <li>The copy of an uploaded file (uploads/) is deleted with it; uploading
+        the same file again restores the dataset. Files you only referenced by
+        path are not touched.</li>
+  </ul>
        <h4>What can I do with it?</h4>
        <ul>
          <li>Scroll to zoom, drag to select cells, shift-drag to pan, double click resets.</li>

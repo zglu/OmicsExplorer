@@ -17,6 +17,7 @@ picks ``datasets.auto.yaml`` up again (the bundle on disk is reused).
 
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 
@@ -35,7 +36,7 @@ from .config import DatasetSpec, EmbeddingSpec, GroupSpec, guess_embedding_kind,
 from .converter import _json_dump, build_dataset
 from .h5ad_io import feature_names, list_obsm, read_index_column, read_obsm, read_obs
 
-__all__ = ["discover", "add_dataset", "start_add", "job_status"]
+__all__ = ["discover", "add_dataset", "start_add", "job_status", "remove_dataset", "file_checksum"]
 
 _JOBS: dict[str, dict[str, Any]] = {}
 _JOBS_LOCK = threading.Lock()
@@ -200,6 +201,15 @@ def _id_from_stem(stem: str) -> str:
     return ident[:48] or "dataset"
 
 
+def file_checksum(path: str | Path) -> str:
+    """The sha256 of a file (streamed - uploads can be large)."""
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as fh:
+        for chunk in iter(lambda: fh.read(8 * 1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def unique_dataset_id(base: str, existing: list[str]) -> str:
     taken = set(existing)
     if base not in taken:
@@ -227,15 +237,27 @@ def read_auto_manifest(project) -> list[dict[str, Any]]:
 
 def save_auto_manifest(project, entries: list[dict[str, Any]], removed: list[str] | None = None) -> Path:
     auto = Path(project.root) / "datasets.auto.yaml"
+    # the removed list and the 'removed' flags of the entries must agree -
+    # removed entries stay in the list (they keep their checksum for the
+    # dedup / restore of a re-upload)
+    removed_ids = {str(x) for x in (removed or [])}
+    for e in entries:
+        if not isinstance(e, dict) or not e.get("id"):
+            continue
+        if e.get("removed"):
+            removed_ids.add(str(e["id"]))
+        else:
+            removed_ids.discard(str(e["id"]))
     with auto.open("w", encoding="utf-8") as fh:
         fh.write(
             "# Datasets added through the OmicsExplorer web UI.\n"
             "# They are merged into the project on every serve/build.\n"
-            "# Datasets in 'removed' are hidden (deleted from the web UI).\n"
+            "# Entries flagged 'removed' were deleted in the web UI - uploading\n"
+            "# the same file again restores them instead of adding a duplicate.\n"
         )
         payload: dict[str, Any] = {"datasets": entries}
-        if removed:
-            payload["removed"] = sorted(set(removed))
+        if removed_ids:
+            payload["removed"] = sorted(removed_ids)
         yaml.safe_dump(payload, fh, sort_keys=False, allow_unicode=True)
     return auto
 
@@ -248,26 +270,42 @@ def read_removed(project) -> list[str]:
     try:
         with auto.open("r", encoding="utf-8") as fh:
             raw = yaml.safe_load(fh) or {}
-    except yaml.YAMError:
+    except yaml.YAMLError:
         return []
     if not isinstance(raw, dict):
         return []
-    return [str(x) for x in (raw.get("removed") or [])]
+    removed = [str(x) for x in (raw.get("removed") or [])]
+    # entries flagged 'removed' count as deleted too (they keep their
+    # checksum so that re-uploading the same file can restore them)
+    entries = raw.get("datasets") if isinstance(raw, dict) else None
+    if isinstance(entries, list):
+        for e in entries:
+            if isinstance(e, dict) and e.get("removed") and e.get("id"):
+                removed.append(str(e["id"]))
+    return removed
 
 
 def remove_dataset(project, ds_id: str, data_dir: Path | None = None) -> dict[str, Any]:
     """Hide one dataset and drop its built data.
 
-    The entry is remembered in ``datasets.auto.yaml`` so the dataset does not
-    come back on the next build - remove it from that list to restore it.
+    The entry stays in ``datasets.auto.yaml`` (flagged ``removed``) so its
+    checksum is remembered - uploading the same file again restores the
+    dataset instead of adding a duplicate.  Remove the entry from that list
+    to restore it by hand.
     """
     ds_id = str(ds_id or "").strip()
     if not ds_id:
         raise ValueError("missing 'id'")
-    entries = [e for e in read_auto_manifest(project) if e.get("id") != ds_id]
-    removed = read_removed(project)
-    if ds_id not in removed:
-        removed.append(ds_id)
+
+    # remember why the dataset went away: its entry (and checksum) stay
+    entries = read_auto_manifest(project)
+    source_path: str | None = None
+    for e in entries:
+        if e.get("id") == ds_id:
+            e["removed"] = True
+            source_path = e.get("path")
+    removed = [x for x in read_removed(project) if x != ds_id]
+    removed.append(ds_id)
     save_auto_manifest(project, entries, removed)
 
     # drop the built bundle of that dataset
@@ -276,26 +314,63 @@ def remove_dataset(project, ds_id: str, data_dir: Path | None = None) -> dict[st
         if target.exists():
             shutil.rmtree(target, ignore_errors=True)
 
-    # keep the live project.json / genes.json in sync
-    pj = Path(data_dir) / "project.json" if data_dir else None
-    if pj and pj.exists():
+    # the uploaded copy (uploads/ inside the project) is ours to delete;
+    # files that were only *referenced* (project.yaml / a path add) stay
+    if source_path:
+        _delete_uploaded_source(project, Path(source_path))
+
+    # keep the live project.json / genes.json / markers.json in sync
+    if data_dir is not None:
+        _remove_from_indexes(data_dir, ds_id)
+    return {"id": ds_id, "removed": removed}
+
+
+def _delete_uploaded_source(project, source: Path) -> None:
+    """Delete the uploaded copy of a dataset (only files under uploads/)."""
+    uploads = (Path(project.root) / "uploads").resolve()
+    try:
+        resolved = source.resolve()
+    except OSError:
+        return
+    if uploads not in resolved.parents or not resolved.exists():
+        return
+    try:
+        resolved.unlink()
+    except OSError:
+        pass
+
+
+def _remove_from_indexes(data_dir: Path, ds_id: str) -> None:
+    """Drop a dataset from the live project.json / genes.json / markers.json."""
+    pj = Path(data_dir) / "project.json"
+    if pj.exists():
         try:
             payload = json.loads(pj.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             payload = {}
         payload["panels"] = [p for p in (payload.get("panels") or []) if p.get("id") != ds_id]
         pj.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
-        gj = pj.parent / "genes.json"
-        if gj.exists():
-            try:
-                genes = json.loads(gj.read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                genes = {}
-            for entry in (genes.get("genes") or {}).values():
-                if isinstance(entry, dict) and entry.get("panels"):
-                    entry["panels"] = [p for p in entry["panels"] if p != ds_id]
-            gj.write_text(json.dumps(genes, separators=(",", ":")), encoding="utf-8")
-    return {"id": ds_id, "removed": removed}
+
+    gj = pj.parent / "genes.json"
+    if gj.exists():
+        try:
+            genes = json.loads(gj.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            genes = {}
+        for entry in (genes.get("genes") or {}).values():
+            if isinstance(entry, dict) and entry.get("panels"):
+                entry["panels"] = [p for p in entry["panels"] if p != ds_id]
+        gj.write_text(json.dumps(genes, separators=(",", ":")), encoding="utf-8")
+
+    mj = Path(data_dir) / "markers.json"
+    if mj.exists():
+        try:
+            markers = json.loads(mj.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            markers = {}
+        if isinstance(markers, dict) and ds_id in markers:
+            del markers[ds_id]
+            mj.write_text(json.dumps(markers, separators=(",", ":")), encoding="utf-8")
 
 
 def make_spec(project, params: dict[str, Any], log: Callable[[str], None]) -> DatasetSpec:
@@ -316,6 +391,8 @@ def make_spec(project, params: dict[str, Any], log: Callable[[str], None]) -> Da
     info = params.get("info") or discover(src)
     project_ids = list(project.ids) + [e.get("id", "") for e in read_auto_manifest(project)]
     ds_id = unique_dataset_id(_id_from_stem(str(params["id"]) if params.get("id") else src.stem), project_ids)
+
+    checksum = params.get("checksum") or file_checksum(src)
 
     group_columns = [str(g) for g in (params.get("groups") or [])]
     embedding_names = [str(e) for e in (params.get("embeddings") or [])]
@@ -349,6 +426,7 @@ def make_spec(project, params: dict[str, Any], log: Callable[[str], None]) -> Da
         units="um" if kind == "spatial" else None,
         default_group=groups[0].name if groups else None,
         default_embedding=embeddings[0].name if embeddings else None,
+        checksum=checksum,
     )
     return spec
 
@@ -362,6 +440,7 @@ def spec_to_entry(spec: DatasetSpec) -> dict[str, Any]:
         "description": spec.description,
         "species": spec.species,
         "units": spec.units,
+        "checksum": spec.checksum,
         "groups": {
             g.name: {"column": g.column, "label": g.label} for g in spec.groups
         },
@@ -425,9 +504,177 @@ def register_built(project, data_dir: Path, payload: dict[str, Any]) -> None:
     _json_dump(gj, {"genes": genes})
 
 
+def _resolve_entry_path(project, raw_path: str) -> Path:
+    """The absolute path of an auto manifest entry (same rules as config)."""
+    from .config import _resolve_path
+
+    path = _resolve_path(raw_path, project.root)
+    if project.data_root is not None and not Path(raw_path).is_absolute():
+        path = _resolve_path(str(Path(raw_path)), project.data_root)
+    return path
+
+
+def _find_duplicate(project, checksum: str, src: Path) -> dict[str, Any] | None:
+    """A dataset that already contains exactly this file (or this path)?
+
+    Returns ``{"id", "entry", "removed", "from_manifest"}`` or None.
+    ``entry`` is the auto manifest entry (None for project.yaml datasets).
+    """
+    resolved_src = src.resolve()
+    # datasets declared in the project manifest (no auto entry behind them)
+    for ds in project.datasets:
+        try:
+            if ds.path.resolve() == resolved_src or (ds.checksum and ds.checksum == checksum):
+                return {"id": ds.id, "entry": None, "removed": False, "from_manifest": True}
+        except OSError:
+            continue
+    # datasets added through the web UI (kept in datasets.auto.yaml, also
+    # the deleted ones - they keep their checksum so they can be restored)
+    for entry in read_auto_manifest(project):
+        entry_id = str(entry.get("id") or "")
+        if not entry_id:
+            continue
+        entry_checksum = str(entry.get("checksum") or "")
+        if entry_checksum and entry_checksum != checksum:
+            continue
+        path = entry.get("path")
+        if not entry_checksum:
+            try:
+                if not path or _resolve_entry_path(project, path).resolve() != resolved_src:
+                    continue
+            except OSError:
+                continue
+        return {
+            "id": entry_id,
+            "entry": entry,
+            "removed": bool(entry.get("removed")),
+            "from_manifest": False,
+        }
+    return None
+
+
+def _spec_from_entry(project, entry: dict[str, Any]) -> DatasetSpec:
+    """A DatasetSpec rebuilt from an auto manifest entry (for restore/build)."""
+    from .config import _parse_embeddings, _parse_groups, _resolve_path
+
+    ds_id = str(entry["id"])
+    raw_path = str(entry.get("path") or "")
+    path = _resolve_path(raw_path, project.root)
+    if project.data_root is not None and not Path(raw_path).is_absolute():
+        path = _resolve_path(raw_path, project.data_root)
+    groups = _parse_groups(entry.get("groups"), ds_id)
+    embeddings = _parse_embeddings(entry.get("embeddings"), ds_id)
+    return DatasetSpec(
+        id=ds_id,
+        path=path,
+        name=str(entry.get("name") or ds_id),
+        species=str(entry.get("species") or ""),
+        kind=str(entry.get("kind") or "umap"),
+        description=str(entry.get("description") or ""),
+        groups=groups,
+        embeddings=embeddings,
+        units=entry.get("units"),
+        bin_size=entry.get("bin_size"),
+        default_group=entry.get("default_group"),
+        default_embedding=entry.get("default_embedding"),
+        checksum=str(entry.get("checksum") or "") or None,
+    )
+
+
+def _register_entry_checksum(project, entry: dict[str, Any], checksum: str) -> None:
+    """Remember the checksum of an entry that did not have one yet."""
+    if entry.get("checksum") == checksum:
+        return
+    entry["checksum"] = checksum
+    entries = read_auto_manifest(project)
+    for i, e in enumerate(entries):
+        if e.get("id") == entry.get("id"):
+            entries[i] = entry
+            break
+    save_auto_manifest(project, entries)
+
+
+def _handle_duplicate(
+    project,
+    data_dir: Path,
+    dup: dict[str, Any],
+    params: dict[str, Any],
+    log: Callable[[str], None],
+) -> dict[str, Any]:
+    """The file was added before: skip, restore or rebuild it."""
+    from .config import load_project
+
+    ds_id = dup["id"]
+    name = (dup["entry"] or {}).get("name") or ds_id
+
+    if dup["removed"]:
+        # deleted through the UI earlier - restore it
+        log(f"'{name}' was deleted earlier - restoring '{ds_id}'")
+        entry = dup["entry"]
+        entry.pop("removed", None)
+        entry["checksum"] = params["checksum"]
+        entries = read_auto_manifest(project)
+        for i, e in enumerate(entries):
+            if e.get("id") == ds_id:
+                entries[i] = entry
+                break
+        save_auto_manifest(project, entries)
+        spec = _spec_from_entry(project, entry)
+        payload = build_dataset(spec, data_dir, log=log)
+        register_built(project, data_dir, payload)
+        log(f"restored '{ds_id}' with {payload['count']:,} cells")
+        return {
+            "id": ds_id,
+            "name": payload["name"],
+            "n_cells": payload["count"],
+            "n_features": payload["features_count"],
+            "restored": True,
+        }
+
+    if not dup["from_manifest"]:
+        _register_entry_checksum(project, dup["entry"], params["checksum"])
+
+    # already active: only (re)build when the bundle is missing
+    if (data_dir / ds_id / "index.json").exists():
+        log(f"'{name}' is already in the project as '{ds_id}' - nothing to do")
+        return {"id": ds_id, "name": str(name), "duplicate": True}
+
+    log(f"'{ds_id}' has no built data yet - building it")
+    if dup["from_manifest"]:
+        # reload: the manifest dataset carries its own spec
+        current = load_project(project.source) if project.source else project
+        spec = current.dataset(ds_id)
+        if spec is None:
+            raise ValueError(f"dataset '{ds_id}' vanished from the project")
+    else:
+        spec = _spec_from_entry(project, dup["entry"])
+    payload = build_dataset(spec, data_dir, log=log)
+    register_built(project, data_dir, payload)
+    return {
+        "id": ds_id,
+        "name": payload["name"],
+        "n_cells": payload["count"],
+        "n_features": payload["features_count"],
+    }
+
+
 def add_dataset(project, data_dir: Path, params: dict[str, Any], log: Callable[[str], None] = print) -> dict[str, Any]:
-    """The full pipeline: spec -> ``datasets.auto.yaml`` -> bundle -> project.json."""
+    """The full pipeline: spec -> ``datasets.auto.yaml`` -> bundle -> project.json.
+
+    Uploading the same file twice does not add a duplicate: the checksum is
+    matched against the project (including datasets deleted in the UI, which
+    are then restored).
+    """
     data_dir = Path(data_dir)
+    src = Path(str(params.get("path", ""))).expanduser()
+    if not src.exists():
+        raise FileNotFoundError(f"{src} does not exist")
+    params["checksum"] = str(params.get("checksum") or file_checksum(src))
+
+    dup = _find_duplicate(project, params["checksum"], src)
+    if dup:
+        return _handle_duplicate(project, data_dir, dup, params, log)
+
     spec = make_spec(project, params, log)
     entry_count = len(read_auto_manifest(project)) + 1
     log(f"saving to datasets.auto.yaml (entry {entry_count})")

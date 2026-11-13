@@ -152,7 +152,27 @@ def create_app(data_dir: Path, web_dir: Path | None = None, *, project: Any = No
             target = store / f"{stamp}_{filename}.{i}"
             i += 1
         target.write_bytes(body)
-        return JSONResponse({"path": str(target), "name": target.name, "size": len(body)})
+        import hashlib
+
+        checksum = hashlib.sha256(body).hexdigest()
+        duplicate = None
+        if project is not None:
+            from .add import _find_duplicate
+
+            try:
+                dup = _find_duplicate(project, checksum, target)
+                if dup:
+                    entry = dup["entry"] or {}
+                    duplicate = {
+                        "id": dup["id"],
+                        "name": entry.get("name") or dup["id"],
+                        "removed": dup["removed"],
+                    }
+            except OSError:
+                duplicate = None
+        return JSONResponse(
+            {"path": str(target), "name": target.name, "size": len(body), "checksum": checksum, "duplicate": duplicate}
+        )
 
     @app.post("/api/datasets/discover")
     async def api_discover(payload: dict = Body(default={})) -> JSONResponse:

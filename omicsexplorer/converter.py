@@ -594,6 +594,35 @@ def _read_gene_details(path: Path) -> dict[str, str]:
     return out
 
 
+def _panel_from_bundle(ds: DatasetSpec, out_dir: Path) -> dict[str, Any] | None:
+    """The panel of a previously built dataset (kept when the source is gone)."""
+    path = out_dir / ds.id / "index.json"
+    if not path.exists():
+        return None
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            payload = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    return {
+        "id": payload["id"],
+        "name": payload["name"],
+        "species": payload["species"],
+        "kind": payload["kind"],
+        "description": payload["description"],
+        "dir": f"data/{ds.id}",
+        "n_cells": payload["count"],
+        "n_features": payload["features_count"],
+        "groups": payload["obs"],
+        "default_group": payload["default_group"],
+        "embeddings": payload["embeddings"],
+        "images": payload["images"],
+        "samples": payload["samples"],
+        "units": payload["units"],
+        "bin_size": payload["bin_size"],
+    }
+
+
 def build_project(
     project: Project,
     out_dir: Path,
@@ -610,6 +639,34 @@ def build_project(
     gene_index: dict[str, dict[str, Any]] = {}
     for ds in project.datasets:
         if only_set and ds.id not in only_set:
+            # not selected: keep its previously built bundle in the indexes
+            panel = _panel_from_bundle(ds, out_dir)
+            if panel is None:
+                log(f"[{ds.id}] - not selected, no built data (skipped)")
+                continue
+            datasets.append(panel)
+            with (out_dir / ds.id / "index.json").open("r", encoding="utf-8") as fh:
+                features = (json.load(fh).get("features") or [])
+            for feature in features:
+                entry = gene_index.setdefault(feature, {"panels": []})
+                if ds.id not in entry["panels"]:
+                    entry["panels"].append(ds.id)
+            continue
+        if not ds.path.exists():
+            # the source file is gone (deleted by hand, unmounted volume, ...):
+            # keep the previously built bundle instead of failing the build
+            panel = _panel_from_bundle(ds, out_dir)
+            if panel is None:
+                log(f"[{ds.id}] ! source file not found and no built data - skipped: {ds.path}")
+                continue
+            log(f"[{ds.id}] ! source file not found ({ds.path}) - keeping the built data")
+            datasets.append(panel)
+            with (out_dir / ds.id / "index.json").open("r", encoding="utf-8") as fh:
+                features = (json.load(fh).get("features") or [])
+            for feature in features:
+                entry = gene_index.setdefault(feature, {"panels": []})
+                if ds.id not in entry["panels"]:
+                    entry["panels"].append(ds.id)
             continue
         payload = build_dataset(ds, out_dir, log=log)
         datasets.append(

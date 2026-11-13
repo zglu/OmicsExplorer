@@ -160,8 +160,16 @@ def write_x_blob(
     scale = float(scale)
     if scale <= 0:
         scale = 1.0
-    if cell_indices.size and int(cell_indices.max()) > 2**31 - 1:
-        raise ValueError("cell index overflows int32")
+    if cell_indices.size:
+        if int(cell_indices.max()) > 2**31 - 1:
+            raise ValueError("cell index overflows int32")
+        if int(cell_indices.max()) >= n_cells or int(cell_indices.min()) < 0:
+            # a cell index outside the dataset means the caller mixed up the
+            # axes (e.g. gene indices instead of cell indices) - the blob
+            # would look like "every gene is zero" in the app
+            raise ValueError(
+                f"cell index out of range: {int(cell_indices.max())} >= {n_cells}"
+            )
 
     genes: dict[str, list[int]] = {}
     offset = 0
